@@ -70,3 +70,8 @@
 **Learning:** Pure CSS-only dropdowns (like DaisyUI's focus-within dropdowns) are simple but lack default keyboard dismissal handlers. Users navigate with Tab but are stuck inside or unable to dismiss the dropdown easily. Implementing an Escape keydown listener on the container, which programmatically blurs `document.activeElement` to clear focus and immediately returns focus back to the trigger button, provides standard accessible behavior. Additionally, using native `<button type="button">` instead of generic `div` elements with `role="button"` ensures native Enter/Space activation without manual key listeners.
 
 **Action:** Always prefer native `<button>` elements for interactive triggers. Implement Escape key listeners on CSS-only dropdown containers to blur active elements and return focus back to the trigger.
+
+## 2026-03-21 - [Auto-Blur Click Dismissals in Nested CSS Dropdowns]
+**Learning:** In CSS-only dropdown structures, selecting or clicking an item within the dropdown list (such as navigating to a new route) often leaves the dropdown visible/sticky because focus remains inside the container. Programmatically blurring the active element (`document.activeElement.blur()`) on all clickable interactive items inside the list forces immediate visual closure, providing instant feedback and preventing a sticky overlay.
+
+**Action:** Add programmatic focus blurring in list items of CSS-only dropdowns to ensure they close immediately upon click and route navigation.

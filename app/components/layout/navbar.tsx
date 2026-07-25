@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, memo, useCallback } from 'react';
+import { useEffect, useState, memo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { getCsrfToken } from '@/lib/auth/fetchWithCsrf';
 import Link from 'next/link';
@@ -27,6 +27,20 @@ export default memo(function Navbar() {
   const [fullNameDisplay, setFullNameDisplay] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isNavigating, setIsNavigating] = useState<string | null>(null);
+
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      // Close dropdown by blurring active elements
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      // Return focus to trigger button
+      menuTriggerRef.current?.focus();
+    }
+  }, []);
 
   // Reset the progress bar when navigation completes.
   useEffect(() => {
@@ -101,10 +115,10 @@ export default memo(function Navbar() {
       <div className="navbar-end gap-2">
         <LanguageSwitcher />
 
-        <div className="dropdown dropdown-end">
-          <div
-            tabIndex={0}
-            role="button"
+        <div className="dropdown dropdown-end" onKeyDown={handleKeyDown}>
+          <button
+            ref={menuTriggerRef}
+            type="button"
             className="btn btn-ghost btn-circle avatar focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             aria-label={t('userMenu')}
           >
@@ -118,7 +132,7 @@ export default memo(function Navbar() {
                 unoptimized
               />
             </div>
-          </div>
+          </button>
 
           <ul
             tabIndex={0}
@@ -137,6 +151,11 @@ export default memo(function Navbar() {
                   rel="noopener noreferrer"
                   href={`${env.NEXT_PUBLIC_SITE_URL}/app_archive.asp`}
                   className="w-full text-left justify-between flex items-center"
+                  onClick={() => {
+                    if (document.activeElement instanceof HTMLElement) {
+                      document.activeElement.blur();
+                    }
+                  }}
                 >
                   <span className="flex items-center gap-1">
                     SIPS Apps
@@ -153,6 +172,11 @@ export default memo(function Navbar() {
                   rel="noopener noreferrer"
                   href={env.NEXT_PUBLIC_SITE_URL}
                   className="justify-between"
+                  onClick={() => {
+                    if (document.activeElement instanceof HTMLElement) {
+                      document.activeElement.blur();
+                    }
+                  }}
                 >
                   <span className="flex items-center gap-1">
                     SIPS
@@ -164,7 +188,12 @@ export default memo(function Navbar() {
             )}
             <li>
               <button
-                onClick={() => handleNavigate('/change-password')}
+                onClick={() => {
+                  if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur();
+                  }
+                  handleNavigate('/change-password');
+                }}
                 className="w-full text-left"
                 disabled={!!isNavigating}
               >
@@ -173,7 +202,12 @@ export default memo(function Navbar() {
             </li>
             <li>
               <button
-                onClick={handleLogout}
+                onClick={() => {
+                  if (document.activeElement instanceof HTMLElement) {
+                    document.activeElement.blur();
+                  }
+                  handleLogout();
+                }}
                 className={`w-full text-left ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={isLoggingOut}
               >
