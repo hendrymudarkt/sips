@@ -13,6 +13,7 @@ import { useCascadingPicker } from './useCascadingPicker';
 import { cookieStore } from '@/utils/auth/cookieStore';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
 import { QueryKeys } from '@/utils/queryKeys';
+import { getCachedCollator } from '@/utils/helpers/perf-formatter';
 import type { SipsUser, UserFormState, UserFilters } from '@/types/domain';
 import { initialUserForm } from '@/types/domain';
 
@@ -92,7 +93,8 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
       });
 
       const toOption = (v: string) => ({ value: v, label: v });
-      const sorter = (a: Option, b: Option) => a.label.localeCompare(b.label);
+      const collator = getCachedCollator('id-ID'); // ⚡ Bolt: Get collator outside sorting loops for max performance
+      const sorter = (a: Option, b: Option) => collator.compare(a.label, b.label);
 
       return {
         enrichedUsers: enriched,

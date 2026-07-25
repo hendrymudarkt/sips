@@ -4,6 +4,8 @@ import {
   formatPerfNumber,
   getCachedDateTimeFormat,
   getCachedNumberFormat,
+  getCachedCollator,
+  perfCompare,
 } from './perf-formatter';
 
 describe('perf-formatter', () => {
@@ -24,6 +26,38 @@ describe('perf-formatter', () => {
       const f1 = getCachedDateTimeFormat('en-US', options);
       const f2 = getCachedDateTimeFormat('en-US', options);
       expect(f1).toBe(f2);
+    });
+  });
+
+  describe('getCachedCollator', () => {
+    it('should return an Intl.Collator instance', () => {
+      const collator = getCachedCollator('id-ID');
+      expect(collator).toBeInstanceOf(Intl.Collator);
+    });
+
+    it('should cache instances', () => {
+      const c1 = getCachedCollator('id-ID');
+      const c2 = getCachedCollator('id-ID');
+      expect(c1).toBe(c2);
+    });
+
+    it('should cache instances with options', () => {
+      const options: Intl.CollatorOptions = { sensitivity: 'base' };
+      const c1 = getCachedCollator('id-ID', options);
+      const c2 = getCachedCollator('id-ID', options);
+      expect(c1).toBe(c2);
+    });
+  });
+
+  describe('perfCompare', () => {
+    it('should sort strings correctly', () => {
+      const result = perfCompare('apple', 'banana', 'id-ID');
+      expect(result).toBeLessThan(0);
+    });
+
+    it('should respect collator options', () => {
+      const result = perfCompare('a', 'A', 'en', { sensitivity: 'base' });
+      expect(result).toBe(0);
     });
   });
 
