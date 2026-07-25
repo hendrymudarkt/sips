@@ -152,7 +152,7 @@ export default function AttendanceFormModal({
             <legend className="fieldset-legend">{t('formTimeIn')}</legend>
             <input type="time" className="input input-bordered w-full" value={form.time_in ?? ''}
               onChange={e => setForm(s => ({ ...s, time_in: e.target.value }))} required
-              disabled={disableUnlessAllowed(false)} title={t('hintTimeIn')} />
+              disabled={disableUnlessAllowed(true)} title={t('hintTimeIn')} />
           </fieldset>
 
           <fieldset className="fieldset col-span-12 md:col-span-2">

@@ -1271,7 +1271,7 @@ export default function Attendance() {
     setForm({
       ...initialForm,
       tanggal: today,
-      time_in: '06:00',
+      time_in: '07:00',
       time_out: '14:00',
       id_device: `${getReadableDevice()} • ${deviceId}`,
       mac_address: pseudoMac,
@@ -1309,7 +1309,7 @@ export default function Attendance() {
     const dIn = combineToDate(s.tanggal, s.time_in);
     const dOut = combineToDate(s.tanggal, s.time_out);
 
-    const baseIn = s.tanggal ? new Date(`${s.tanggal}T06:00`) : null;
+    const baseIn = s.tanggal ? new Date(`${s.tanggal}T07:00`) : null;
     const baseOut = s.tanggal ? new Date(`${s.tanggal}T14:00`) : null;
 
     let totalLate = s.total_late_time;
@@ -1339,7 +1339,7 @@ export default function Attendance() {
 
     let mandays = '0';
     if (s.attendance === 'KJ' || s.attendance === 'WH' || s.attendance === 'WS') {
-      mandays = fullHK ? '1' : (effectiveMin / 480).toFixed(4);
+      mandays = fullHK ? '1' : (effectiveMin / 420).toFixed(4);
     } else {
       mandays = '0';
     }
@@ -1511,7 +1511,7 @@ export default function Attendance() {
           kemandoran: d.kemandoran || '',
           kode_karyawan_mandor: d.kode_karyawan_mandor || '',
           kode_karyawan: d.kode_karyawan || '',
-          time_in: toHM(d.time_in) || '06:00',
+          time_in: toHM(d.time_in) || '07:00',
           time_out: toHM(d.time_out) || '14:00',
           location_in: d.location_in || '',
           location_out: d.location_out || '',
