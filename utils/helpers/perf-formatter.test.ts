@@ -4,6 +4,8 @@ import {
   formatPerfNumber,
   getCachedDateTimeFormat,
   getCachedNumberFormat,
+  getCachedCollator,
+  perfCompare,
 } from './perf-formatter';
 
 describe('perf-formatter', () => {
@@ -69,6 +71,40 @@ describe('perf-formatter', () => {
 
     it('should handle invalid numbers', () => {
       expect(formatPerfNumber('abc', 'en-US')).toBe('abc');
+    });
+  });
+
+  describe('getCachedCollator', () => {
+    it('should return an Intl.Collator instance', () => {
+      const collator = getCachedCollator('id-ID');
+      expect(collator).toBeInstanceOf(Intl.Collator);
+    });
+
+    it('should cache instances', () => {
+      const c1 = getCachedCollator('id-ID');
+      const c2 = getCachedCollator('id-ID');
+      expect(c1).toBe(c2);
+    });
+
+    it('should cache instances with options', () => {
+      const options: Intl.CollatorOptions = { sensitivity: 'base' };
+      const c1 = getCachedCollator('id-ID', options);
+      const c2 = getCachedCollator('id-ID', options);
+      expect(c1).toBe(c2);
+    });
+  });
+
+  describe('perfCompare', () => {
+    it('should compare strings correctly', () => {
+      expect(perfCompare('apple', 'banana')).toBeLessThan(0);
+      expect(perfCompare('banana', 'apple')).toBeGreaterThan(0);
+      expect(perfCompare('apple', 'apple')).toBe(0);
+    });
+
+    it('should support sorting with cached collator', () => {
+      const arr = ['cherry', 'banana', 'apple'];
+      arr.sort((a, b) => perfCompare(a, b));
+      expect(arr).toEqual(['apple', 'banana', 'cherry']);
     });
   });
 });

@@ -76,3 +76,34 @@ export function formatPerfNumber(
   if (isNaN(n)) return String(num);
   return getCachedNumberFormat(locale, options).format(n);
 }
+
+const collatorCache = new Map<string, Intl.Collator>();
+
+/**
+ * Returns a cached Intl.Collator instance.
+ * Avoids the computationally expensive recreation of Intl.Collator in loops or sorts.
+ */
+export function getCachedCollator(
+  locale: string,
+  options?: Intl.CollatorOptions
+): Intl.Collator {
+  const key = options ? `${locale}-${JSON.stringify(options)}` : locale;
+  let collator = collatorCache.get(key);
+  if (!collator) {
+    collator = new Intl.Collator(locale, options);
+    collatorCache.set(key, collator);
+  }
+  return collator;
+}
+
+/**
+ * Performs a high-performance locale-aware string comparison using a cached collator.
+ */
+export function perfCompare(
+  a: string,
+  b: string,
+  locale = 'id-ID',
+  options?: Intl.CollatorOptions
+): number {
+  return getCachedCollator(locale, options).compare(a, b);
+}

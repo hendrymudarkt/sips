@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSections, fetchGangs } from '@/utils/services/masterDataService';
 import { fetchBusinessUnits } from '@/utils/services/businessUnitService';
-import type { SectionMaster, GangMaster } from '@/utils/services/masterDataService';
 
 export function useCascadingPicker(selFcba?: string, selSection?: string) {
   const { data: businessUnits, isLoading: isLoadingBU } = useQuery({
