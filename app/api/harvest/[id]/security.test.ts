@@ -21,7 +21,11 @@ vi.mock('@/lib/api/apiProxy', () => ({
   parseJsonSafe: vi.fn((res) => res.json().then((data: unknown) => ({ data, parseError: false }))),
 }));
 
-describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
+describe('Harvest ID API Security', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+    vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');
   });
 
   const context = { params: Promise.resolve({ id: '123' }) };
@@ -86,7 +90,10 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
         json: async () => ({ message: 'Detailed SQL error at 10.0.0.5' }),
       } as Response);
 
-      const req = new NextRequest('http://localhost/api/harvest/123', { method: 'PUT' });
+      const req = new NextRequest('http://localhost/api/harvest/123', {
+        method: 'PUT',
+        body: new FormData(),
+      });
       const res = await PUT(req, context);
 
       expect(res.status).toBe(500);
@@ -128,13 +135,14 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
         json: async () => ({ message: 'Internal: DB crash on node 5' }),
       } as Response);
 
-      const formData = new FormData();
-      formData.append('ba_deleted', new Blob(['test'], { type: 'application/pdf' }), 'ba.pdf');
-
       const req = new NextRequest('http://localhost/api/harvest/123', {
         method: 'DELETE',
-        body: formData,
       });
+      req.formData = async () => {
+        const fd = new FormData();
+        fd.append('ba_deleted', new File(['test'], 'ba.pdf', { type: 'application/pdf' }));
+        return fd;
+      };
       const res = await DELETE(req, context);
 
       expect(res.status).toBe(500);

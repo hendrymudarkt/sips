@@ -7,8 +7,11 @@ vi.mock('@/utils/api/absensiProxy', () => ({  BACKEND_URL: 'http://trusted-backe
 vi.mock('@/utils/api/requestScope', () => ({  applyUserDataScope: vi.fn((_req, params) => params),}));
 vi.mock('@/lib/api/apiProxy', () => ({  proxyGet: vi.fn(() => Promise.resolve(new Response(JSON.stringify({ success: true, data: [] })))),  unauthorizedResponse: vi.fn(() => new Response(JSON.stringify({ success: false, message: 'No authentication token found. Please login again.' }), { status: 401 })),}));
 describe('Harvest Upload API Security', () => {
-  beforeEach(() => {
-  vi.clearAllMocks();  });
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+    vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');
+  });
   it('should return 401 if no token', async () => {    const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
     vi.mocked(getTokenFromCookie).mockResolvedValue(undefined);    const req = new NextRequest('http://localhost/api/harvest/upload');    const res = await GET(req);    expect(res.status).toBe(401);  });
   it('should call proxyGet when token is present', async () => {    const { proxyGet } = await import('@/lib/api/apiProxy');

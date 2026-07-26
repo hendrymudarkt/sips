@@ -17,5 +17,25 @@ export function sanitizeNumericInput(input: string): string {
  */
 export function isValidRedirect(path: string | null | undefined): boolean {
   if (!path) return false;
-  return path.startsWith('/') && !path.startsWith('//') && !path.startsWith('/\\');
+
+  // Safe relative paths must strictly start with a single '/'
+  // and cannot be protocol-relative ('//') or backslash-prefixed ('/\')
+  if (!path.startsWith('/') || path.startsWith('//') || path.startsWith('/\\')) {
+    return false;
+  }
+
+  // Relative paths should never contain backslashes on standard web servers.
+  // We forbid backslashes ('\') and their URL-encoded equivalents ('%5c' / '%5C')
+  // to prevent browser-specific backslash normalization bypasses (e.g. Chrome/Edge)
+  if (path.includes('\\') || path.toLowerCase().includes('%5c')) {
+    return false;
+  }
+
+  // Prevent embedded absolute URLs, protocols, or double-slashes within the path
+  // (e.g. '/http://evil.com' or '/javascript:alert(1)')
+  if (path.includes('//') || path.includes(':')) {
+    return false;
+  }
+
+  return true;
 }
