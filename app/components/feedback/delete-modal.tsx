@@ -39,10 +39,13 @@ export function DeleteModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   // Focus management and cleanup
   useEffect(() => {
     if (open) {
+      // 🎨 Palette Improvement: Capture document.activeElement before opening to return focus on close
+      triggerRef.current = document.activeElement as HTMLElement;
       setSelectedFile(null);
       setFileError('');
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -51,8 +54,37 @@ export function DeleteModal({
         cancelButtonRef.current?.focus();
       }, 50);
       return () => clearTimeout(timer);
+    } else {
+      // 🎨 Palette Improvement: Return focus back to the triggering element
+      if (triggerRef.current) {
+        triggerRef.current.focus();
+        triggerRef.current = null;
+      }
     }
   }, [open]);
+
+  // Ensure focus is restored even if the component unmounts while open
+  useEffect(() => {
+    return () => {
+      if (triggerRef.current) {
+        triggerRef.current.focus();
+      }
+    };
+  }, []);
+
+  // 🎨 Palette Improvement: Dismiss modal with Escape key (prevented during loading)
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, isLoading, onClose]);
 
   const [fileError, setFileError] = useState('');
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

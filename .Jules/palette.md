@@ -70,3 +70,8 @@
 **Learning:** Pure CSS-only dropdowns (like DaisyUI's focus-within dropdowns) are simple but lack default keyboard dismissal handlers. Users navigate with Tab but are stuck inside or unable to dismiss the dropdown easily. Implementing an Escape keydown listener on the container, which programmatically blurs `document.activeElement` to clear focus and immediately returns focus back to the trigger button, provides standard accessible behavior. Additionally, using native `<button type="button">` instead of generic `div` elements with `role="button"` ensures native Enter/Space activation without manual key listeners.
 
 **Action:** Always prefer native `<button>` elements for interactive triggers. Implement Escape key listeners on CSS-only dropdown containers to blur active elements and return focus back to the trigger.
+
+## 2026-03-22 - [Focus Return & Escape Key Dismissal on Dialog Modals]
+**Learning:** Custom dialog modals rendered inside normal divs with CSS-open flags (unlike native HTML `<dialog>` elements) lack default keyboard Escape dismissal and focus-restoration logic. This strands keyboard and screen reader users upon modal dismissal. Adding a listener for the Escape key (safely guarded against triggers when the modal is in a loading/submitting state) and programmatically capturing the opening trigger element via `document.activeElement` to focus it back when closing provides highly accessible and robust standard behavior.
+
+**Action:** Capture the active trigger element with `useRef` on open, restore focus to it on close/unmount, and always implement Escape key listeners on custom open modals except when a loading or submitting state is active.
