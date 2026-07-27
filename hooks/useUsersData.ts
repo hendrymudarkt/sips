@@ -13,6 +13,7 @@ import { useCascadingPicker } from './useCascadingPicker';
 import { cookieStore } from '@/utils/auth/cookieStore';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
 import { QueryKeys } from '@/utils/queryKeys';
+import { getCachedCollator } from '@/utils/helpers/perf-formatter';
 import type { SipsUser, UserFormState, UserFilters } from '@/types/domain';
 import { initialUserForm } from '@/types/domain';
 
@@ -91,8 +92,9 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
         };
       });
 
+      const collator = getCachedCollator('id-ID');
       const toOption = (v: string) => ({ value: v, label: v });
-      const sorter = (a: Option, b: Option) => a.label.localeCompare(b.label);
+      const sorter = (a: Option, b: Option) => collator.compare(a.label, b.label);
 
       return {
         enrichedUsers: enriched,
@@ -206,12 +208,13 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     queryFn: async () => {
       if (!bulkFcba) return [];
       const rows = await fetchSections({ fcba: bulkFcba });
+      const collator = getCachedCollator('id-ID');
       return rows
         .map(s => ({
           value: s.fccode,
           label: s.fcname && s.fcname !== s.fccode ? `${s.fccode} - ${s.fcname}` : s.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     },
     enabled: !!bulkFcba,
     staleTime: 30 * 60 * 1000,
@@ -223,12 +226,13 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     queryFn: async () => {
       if (!bulkFcba || !bulkAfdeling) return [];
       const rows = await fetchGangs({ fcba: bulkFcba, afdeling: bulkAfdeling });
+      const collator = getCachedCollator('id-ID');
       return rows
         .map(g => ({
           value: g.fccode,
           label: g.fcname && g.fcname !== g.fccode ? `${g.fccode} - ${g.fcname}` : g.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     },
     enabled: !!bulkFcba && !!bulkAfdeling,
     staleTime: 30 * 60 * 1000,
