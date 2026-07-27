@@ -40,19 +40,32 @@ export function DeleteModal({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  // Focus management and cleanup
+  // Focus management, Escape key listener, and cleanup
   useEffect(() => {
     if (open) {
       setSelectedFile(null);
       setFileError('');
       if (fileInputRef.current) fileInputRef.current.value = '';
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && !isLoading) {
+          onClose();
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+
       // Small delay to ensure the modal is rendered before focusing
       const timer = setTimeout(() => {
         cancelButtonRef.current?.focus();
       }, 50);
-      return () => clearTimeout(timer);
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('keydown', handleKeyDown);
+      };
     }
-  }, [open]);
+  }, [open, isLoading, onClose]);
 
   const [fileError, setFileError] = useState('');
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

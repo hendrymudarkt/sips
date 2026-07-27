@@ -70,3 +70,8 @@
 **Learning:** Pure CSS-only dropdowns (like DaisyUI's focus-within dropdowns) are simple but lack default keyboard dismissal handlers. Users navigate with Tab but are stuck inside or unable to dismiss the dropdown easily. Implementing an Escape keydown listener on the container, which programmatically blurs `document.activeElement` to clear focus and immediately returns focus back to the trigger button, provides standard accessible behavior. Additionally, using native `<button type="button">` instead of generic `div` elements with `role="button"` ensures native Enter/Space activation without manual key listeners.
 
 **Action:** Always prefer native `<button>` elements for interactive triggers. Implement Escape key listeners on CSS-only dropdown containers to blur active elements and return focus back to the trigger.
+
+## 2026-03-21 - [Escape Key Dismissal for Overlay Modals]
+**Learning:** Overlay-based dialog modals (such as `DeleteModal`) that lack native `<dialog>` elements must have programmatic Escape key listeners to comply with WAI-ARIA modal dialog specifications. Crucially, modal dismissal on Escape must be conditionally guarded to prevent closing the modal while async background processes or file upload state submissions are active (`isLoading`), ensuring data integrity during state mutations.
+
+**Action:** Add `keydown` event listeners for the `Escape` key to all custom overlay modal containers, gated with a check to prevent dismissal during loading states (`!isLoading`).
