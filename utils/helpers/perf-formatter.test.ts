@@ -4,6 +4,8 @@ import {
   formatPerfNumber,
   getCachedDateTimeFormat,
   getCachedNumberFormat,
+  getCachedCollator,
+  perfCompare,
 } from './perf-formatter';
 
 describe('perf-formatter', () => {
@@ -24,6 +26,21 @@ describe('perf-formatter', () => {
       const f1 = getCachedDateTimeFormat('en-US', options);
       const f2 = getCachedDateTimeFormat('en-US', options);
       expect(f1).toBe(f2);
+    });
+  });
+
+  describe('getCachedCollator & perfCompare', () => {
+    it('should return an Intl.Collator instance and cache it', () => {
+      const collator1 = getCachedCollator('en-US');
+      const collator2 = getCachedCollator('en-US');
+      expect(collator1).toBeInstanceOf(Intl.Collator);
+      expect(collator1).toBe(collator2);
+    });
+
+    it('should compare strings correctly via perfCompare', () => {
+      expect(perfCompare('apple', 'banana', 'en-US')).toBeLessThan(0);
+      expect(perfCompare('cherry', 'banana', 'en-US')).toBeGreaterThan(0);
+      expect(perfCompare('apple', 'apple', 'en-US')).toBe(0);
     });
   });
 

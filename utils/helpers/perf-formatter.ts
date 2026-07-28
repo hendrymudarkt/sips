@@ -7,6 +7,35 @@
 
 const dateTimeFormatCache = new Map<string, Intl.DateTimeFormat>();
 const numberFormatCache = new Map<string, Intl.NumberFormat>();
+const collatorCache = new Map<string, Intl.Collator>();
+
+/**
+ * Returns a cached Intl.Collator instance.
+ */
+export function getCachedCollator(
+  locale: string,
+  options?: Intl.CollatorOptions
+): Intl.Collator {
+  const key = options ? `${locale}-${JSON.stringify(options)}` : locale;
+  let collator = collatorCache.get(key);
+  if (!collator) {
+    collator = new Intl.Collator(locale, options);
+    collatorCache.set(key, collator);
+  }
+  return collator;
+}
+
+/**
+ * High-performance string comparison using cached Intl.Collator.
+ */
+export function perfCompare(
+  a: string,
+  b: string,
+  locale: string,
+  options?: Intl.CollatorOptions
+): number {
+  return getCachedCollator(locale, options).compare(a, b);
+}
 
 /**
  * Returns a cached Intl.DateTimeFormat instance.
