@@ -607,7 +607,7 @@ export default function Lhm() {
               {r.fcba && r.fddate && r.kemandoran && (
                 <a
                   href={`/lhm/lhm-report?fcba=${r.fcba}&afdeling=${r.afdeling}&tanggal=${tanggal}&kemandoran=${r.kemandoran}`}
-                  target="_blank"
+                  target="_self"
                   rel="noopener noreferrer"
                   className="tooltip tooltip-right"
                   data-tip={` Print LHM Kemandoran ${r.kemandoran} `}
@@ -1185,5 +1185,3 @@ export default function Lhm() {
     </div>
   );
 }
-
-
