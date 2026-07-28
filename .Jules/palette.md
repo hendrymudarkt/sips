@@ -70,3 +70,8 @@
 **Learning:** Pure CSS-only dropdowns (like DaisyUI's focus-within dropdowns) are simple but lack default keyboard dismissal handlers. Users navigate with Tab but are stuck inside or unable to dismiss the dropdown easily. Implementing an Escape keydown listener on the container, which programmatically blurs `document.activeElement` to clear focus and immediately returns focus back to the trigger button, provides standard accessible behavior. Additionally, using native `<button type="button">` instead of generic `div` elements with `role="button"` ensures native Enter/Space activation without manual key listeners.
 
 **Action:** Always prefer native `<button>` elements for interactive triggers. Implement Escape key listeners on CSS-only dropdown containers to blur active elements and return focus back to the trigger.
+
+## 2026-03-25 - [Accessible Dialogue Interactions & Associated File Inputs]
+**Learning:** For dialog components like `DeleteModal` that handle uploads, accessibility is vastly improved when label associations and keyboard listeners are configured. Utilizing proper `htmlFor` attributes on the file label legend elements linked to the input ID, alongside `aria-describedby` mapping dynamically to both static hints and dynamic alerts, ensures screen reader users receive complete operational details. Additionally, adding an `Escape` keydown listener (guarded against active loaders) provides a smooth, standardized dialogue dismissal flow.
+
+**Action:** Associate file input elements with proper legends or text labels via `htmlFor`. Utilize dynamic `aria-describedby` attributes to associate inputs with active state alerts and descriptions. Implement gated Escape listeners to gracefully dismiss modals.
