@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { buildFilteredUrl, getTokenFromCookie, BACKEND_URL } from '@/utils/api/absensiProxy';
+import { buildFilteredUrl, getTokenFromCookie, BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { applyUserDataScope } from '@/utils/api/requestScope';
 import { authHeaders, isRecord, parseJsonSafe } from '@/lib/api/apiProxy';
 import { validateSecurity } from '@/lib/auth/security';

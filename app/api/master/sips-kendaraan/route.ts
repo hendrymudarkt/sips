@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL } from '@/utils/api/absensiProxy';
+import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { authHeaders, parseJsonSafe, isRecord } from '@/lib/api/apiProxy';
 
 export const dynamic = 'force-dynamic';

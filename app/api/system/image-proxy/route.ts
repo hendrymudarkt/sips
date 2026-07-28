@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ImageProxy } from '@/lib/constants';
 import { BACKEND_URL } from '@/utils/auth/backendConfig';
 import { env } from '@/lib/env';
-import { getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 
 const PLACEHOLDER_SVG = Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300"><rect width="400" height="300" fill="#f3f4f6"/><text x="200" y="150" font-family="sans-serif" font-size="14" fill="#9ca3af" text-anchor="middle" dominant-baseline="middle">Image unavailable</text></svg>'

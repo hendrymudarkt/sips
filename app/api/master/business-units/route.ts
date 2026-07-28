@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL } from '@/utils/api/absensiProxy';
+import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { authHeaders } from '@/lib/api/apiProxy';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {

@@ -12,7 +12,7 @@ vi.mock('@/lib/auth/security', () => ({
   validateSecurity: vi.fn(),
 }));
 
-vi.mock('@/utils/api/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://trusted-backend.com',
   getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),
 }));
@@ -38,7 +38,7 @@ describe('User Status API Security', () => {beforeEach(() => {vi.clearAllMocks()
   });
 
   it('should return 401 if no token', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
-    const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+    const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
     vi.mocked(getTokenFromCookie).mockResolvedValue(null);
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from './route';
 import { NextRequest } from 'next/server';
 
-vi.mock('@/utils/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://backend.test',
 }));
 

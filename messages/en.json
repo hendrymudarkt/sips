@@ -406,6 +406,7 @@
     "filterReset": "Reset",
     "filterResetTooltip": "Reset all filters",
     "filterTph": "TPH",
+    "filterFieldcode": "Field Code",
     "filterToggleTooltip": "Show / hide advanced filters",
     "formAdditionalTitle": "Additional Information",
     "formAfdeling": "Afdeling (Section) *",

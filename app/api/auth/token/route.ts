@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getTokenFromCookie, BACKEND_URL } from '@/utils/api/absensiProxy';
+import { getTokenFromCookie, BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { UserLevel } from '@/lib/constants';
 import { validateSecurity } from '@/lib/auth/security';
 

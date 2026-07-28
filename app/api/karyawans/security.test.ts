@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 
 vi.stubGlobal('fetch', vi.fn());
 
-vi.mock('@/utils/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://trusted-backend.com',
   getTokenFromCookie: vi.fn(),
   buildFilteredUrl: vi.fn(),

@@ -1226,8 +1226,8 @@ export function useAttendanceData() {
       const kName = it.namakaryawan || '';
       const karyawanLabel = kName ? `${kCode} - ${kName}` : kCode;
 
-      const tIn = it.time_in ? it.time_in.split(' ')[1]?.slice(0, 5) || it.time_in : '-';
-      const tOut = it.time_out ? it.time_out.split(' ')[1]?.slice(0, 5) || it.time_out : '-';
+      const tIn = it.time_in ? it.time_in.split(' ')[1]?.slice(0, 8) || it.time_in : '-';
+      const tOut = it.time_out ? it.time_out.split(' ')[1]?.slice(0, 8) || it.time_out : '-';
 
       const searchContent = `${it.kemandoran || ''} ${kName} ${kCode} ${mCode} ${mandorLabel} ${it.fcba || ''} ${it.fcba_destination || ''} ${it.section_destination || ''} ${it.section || ''} ${it.gang || ''} ${it.attendance_type || ''} ${it.attendance || ''} ${it.no_ba_exca || ''} ${it.id_device || ''} ${it.mac_address || ''} ${it.location_in || ''} ${it.location_out || ''} ${it.pengancakan || ''} ${it.mandays || ''} ${it._dateOnly || ''} ${displayDate}`
         .toLowerCase()

@@ -620,6 +620,7 @@ export default function HarvestPage() {
               { key: 'fcba', label: tH('filterFcba'), type: 'text', placeholder: tH('filterFcba'), disabled: isFcbaLocked },
               { key: 'afdeling', label: tH('filterAfdeling'), type: 'text', placeholder: tH('filterAfdeling'), disabled: isAfdelingLocked },
               { key: 'tph', label: tH('filterTph'), type: 'text', placeholder: tH('filterTph') },
+              { key: 'fieldcode', label: tH('filterFieldcode'), type: 'text', placeholder: tH('filterFieldcode') },
             ]}
             values={filters}
             onChange={(key, value) => setFilters(s => ({ ...s, [key]: value }))}
@@ -627,7 +628,7 @@ export default function HarvestPage() {
             onReset={() => {
               const resetFilters = {
                 tanggal: '', tanggal_end: '', nodokumen: '', kode_karyawan: '',
-                kemandoran: '', fcba: '', afdeling: '', tph: '',
+                kemandoran: '', fcba: '', afdeling: '', tph: '', fieldcode: '',
               };
               setFilters(getScopedFilters(resetFilters));
             }}

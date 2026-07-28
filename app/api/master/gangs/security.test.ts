@@ -1,11 +1,11 @@
 import { GET } from './route';
 import { NextRequest } from 'next/server';
-import { getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { UserLevel } from '@/lib/constants';
 
 vi.stubGlobal('fetch', vi.fn());
 
-vi.mock('@/utils/api/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://trusted-backend.com',
   getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),
   authHeaders: vi.fn(token => ({

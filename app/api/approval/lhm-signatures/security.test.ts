@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 
 vi.stubGlobal('fetch', vi.fn());
 
-vi.mock('@/utils/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://trusted-backend.com',
   getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),
 }));
@@ -54,7 +54,7 @@ describe('LHM Signatures API Security', () => {
     );
 
     // Mock a crash in getTokenFromCookie which is outside the fetch loop try-catch
-    const { getTokenFromCookie } = await import('@/utils/absensiProxy');
+    const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
     vi.mocked(getTokenFromCookie).mockRejectedValueOnce(new Error('Sensitive database crash'));
 
     const res = await GET(req);

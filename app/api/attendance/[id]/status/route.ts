@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ABSENSI_BASE, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { ABSENSI_BASE, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { validateSecurity } from '@/lib/auth/security';
 import { authHeaders, parseJsonSafe, unauthorizedResponse } from '@/lib/api/apiProxy';
 

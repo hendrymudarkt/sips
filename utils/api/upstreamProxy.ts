@@ -30,6 +30,7 @@ export function buildFilteredUrl(base: string, searchParams: URLSearchParams) {
     'sourcetime',
     'nodokumen',
     'tph',
+    'fieldcode',
   ];
   validParams.forEach(key => {
     const v = searchParams.get(key);

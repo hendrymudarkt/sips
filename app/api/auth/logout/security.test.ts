@@ -3,7 +3,7 @@ import { POST } from './route';
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 
-vi.mock('@/utils/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://trusted-backend.com',
 }));
 

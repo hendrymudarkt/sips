@@ -306,6 +306,7 @@ export function useHarvestData() {
       if (filters.fcba) p.fcba = filters.fcba;
       if (filters.afdeling) p.afdeling = filters.afdeling;
       if (filters.tph) p.tph = filters.tph;
+      if (filters.fieldcode) p.fieldcode = filters.fieldcode;
       if (filters.kemandoran) p.kemandoran = filters.kemandoran;
 
       const res = await fetchHarvestList(p);

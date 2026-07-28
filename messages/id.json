@@ -406,6 +406,7 @@
     "filterReset": "Reset",
     "filterResetTooltip": "Reset semua filter",
     "filterTph": "TPH",
+    "filterFieldcode": "Field Code",
     "filterToggleTooltip": "Tampilkan / sembunyikan filter lanjutan",
     "formAdditionalTitle": "Informasi Tambahan",
     "formAfdeling": "Afdeling (Section) *",

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { BACKEND_URL } from '@/utils/api/absensiProxy';
+import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { loginRateLimiter } from '@/lib/auth/rateLimiter';
 import { validateCsrfToken } from '@/lib/auth/csrf';
 import { CookieName } from '@/lib/constants';

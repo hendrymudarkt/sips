@@ -266,6 +266,7 @@ export type HarvestFilters = Partial<{
   fcba: string;
   afdeling: string;
   tph: string;
+  fieldcode: string;
   kemandoran: string;
 }>;
 
