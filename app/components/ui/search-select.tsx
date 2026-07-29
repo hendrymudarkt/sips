@@ -115,10 +115,17 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
 
       <button
         type="button"
-        className={`input input-bordered w-full flex items-center justify-between whitespace-nowrap overflow-hidden cursor-pointer ${
+        className={`input input-bordered w-full flex items-center justify-between whitespace-nowrap overflow-hidden cursor-pointer focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/70 focus-visible:outline-none ${
           small ? 'input-sm' : ''
         } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
         onClick={() => !disabled && setOpen(s => !s)}
+        onKeyDown={e => {
+          if (disabled) return;
+          if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
         aria-expanded={open}
         aria-haspopup="listbox"
         title={currentLabel || placeholder}
@@ -127,7 +134,11 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
         <span className={`truncate ${!value ? 'text-base-content/50' : ''}`}>
           {currentLabel || placeholder || t('select')}
         </span>
-        <Icon name="chevron-down" className="ml-2 h-4 w-4 opacity-60 transition-transform duration-200" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+        <Icon
+          name="chevron-down"
+          className="ml-2 h-4 w-4 opacity-60 transition-transform duration-200"
+          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+        />
       </button>
 
       {required && !value && (
@@ -146,7 +157,10 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
           <div className="p-2 border-b border-base-200">
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Icon name="search" className="h-4 w-4 opacity-60 group-focus-within:text-primary group-focus-within:opacity-100 transition-all" />
+                <Icon
+                  name="search"
+                  className="h-4 w-4 opacity-60 group-focus-within:text-primary group-focus-within:opacity-100 transition-all"
+                />
               </div>
               <input
                 autoFocus
@@ -155,7 +169,7 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
                 aria-label={t('typeToSearch')}
                 value={q}
                 onChange={e => setQ(e.target.value)}
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === 'Escape') {
                     setOpen(false);
                     // Return focus to the trigger button
@@ -187,11 +201,7 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
               )}
             </div>
           </div>
-          <ul
-            ref={listRef}
-            role="listbox"
-            className="max-h-64 overflow-auto py-1"
-          >
+          <ul ref={listRef} role="listbox" className="max-h-64 overflow-auto py-1">
             {filtered.length === 0 && (
               <li role="none" className="p-3 text-base-content/60 text-sm text-center">
                 {t('noData')}
@@ -213,7 +223,7 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
                     // 🎨 Palette Improvement: Return focus to trigger button
                     boxRef.current?.querySelector('button')?.focus();
                   }}
-                  onKeyDown={(e) => handleOptionKeyDown(e, idx)}
+                  onKeyDown={e => handleOptionKeyDown(e, idx)}
                   title={opt.label}
                 >
                   <div className="min-w-0 flex-1">
@@ -239,4 +249,3 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
 
 export const SearchSelect = React.memo(SearchSelectInner);
 SearchSelect.displayName = 'SearchSelect';
-

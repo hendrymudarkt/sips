@@ -75,3 +75,8 @@
 **Learning:** For dialog components like `DeleteModal` that handle uploads, accessibility is vastly improved when label associations and keyboard listeners are configured. Utilizing proper `htmlFor` attributes on the file label legend elements linked to the input ID, alongside `aria-describedby` mapping dynamically to both static hints and dynamic alerts, ensures screen reader users receive complete operational details. Additionally, adding an `Escape` keydown listener (guarded against active loaders) provides a smooth, standardized dialogue dismissal flow.
 
 **Action:** Associate file input elements with proper legends or text labels via `htmlFor`. Utilize dynamic `aria-describedby` attributes to associate inputs with active state alerts and descriptions. Implement gated Escape listeners to gracefully dismiss modals.
+
+## 2026-03-26 - [Keyboard Activation & Focus on Custom Select Triggers]
+**Learning:** For custom select/combobox triggers (like `SearchSelect`), keyboard accessibility must start on the trigger button. Implementing support for standard keyboard events (`ArrowDown`, `ArrowUp`, `Enter`, and `Space`) on the trigger button to open the menu and transition focus to the auto-focused search input creates a seamless, standard-compliant experience. Additionally, explicit `focus-visible` ring indicators are critical for keeping keyboard-only users oriented.
+
+**Action:** Always map standard select trigger keyboard keys on custom dropdown buttons to open the select, and apply explicit focus rings (`focus-visible:ring-2 focus-visible:ring-primary/40`) to make the focused state highly recognizable.
