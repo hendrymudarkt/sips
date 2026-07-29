@@ -20,6 +20,9 @@ interface DeleteModalProps {
 /**
  * 🎨 Palette Enhancement: DeleteModal component.
  * - Improved accessibility with ARIA roles and focus management.
+ * - Added Escape key down handler for keyboard dismissal, guarded by isLoading.
+ * - Robust label, hint, and error associations on the file input using htmlFor and aria-describedby.
+ * - Explicit focus rings for visible keyboard navigation.
  * - Better visual feedback with icons and immediate state updates.
  * - Standardized UX for destructive actions requiring documentation.
  */
@@ -39,6 +42,19 @@ export function DeleteModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [fileError, setFileError] = useState('');
+
+  // Escape key handler for accessible keyboard dismissal
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, isLoading, onClose]);
 
   // Focus management and cleanup
   useEffect(() => {
@@ -54,7 +70,6 @@ export function DeleteModal({
     }
   }, [open]);
 
-  const [fileError, setFileError] = useState('');
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     if (file && file.size > 2 * 1024 * 1024) {
@@ -81,7 +96,7 @@ export function DeleteModal({
       <div className="modal-box max-w-lg relative">
         <button
           type="button"
-          className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
+          className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 focus-visible:ring-2 focus-visible:ring-primary"
           onClick={onClose}
           aria-label="Close"
           disabled={isLoading}
@@ -102,27 +117,35 @@ export function DeleteModal({
         <div className="divider my-4 opacity-50" />
 
         <fieldset className="fieldset">
-          <legend className="fieldset-legend font-semibold">{label}</legend>
+          <legend className="fieldset-legend font-semibold">
+            <label htmlFor="delete-file-input" className="cursor-pointer">{label}</label>
+          </legend>
           <input
+            id="delete-file-input"
             ref={fileInputRef}
             type="file"
             accept=".pdf,application/pdf"
-            className="file-input file-input-bordered w-full focus:border-primary transition-all"
+            className="file-input file-input-bordered w-full focus:border-primary transition-all focus-visible:ring-2 focus-visible:ring-primary"
             onChange={handleFileChange}
             disabled={isLoading}
+            aria-describedby={`delete-file-hint ${fileError ? 'delete-file-error' : ''}`}
           />
-          <p className="text-[0.7rem] opacity-60 mt-1 flex items-center gap-1">
+          <p id="delete-file-hint" className="text-[0.7rem] opacity-60 mt-1 flex items-center gap-1">
             <Icon name="info" className="h-3 w-3" />
             {hint}
           </p>
-          {fileError && <p className="text-error text-sm mt-1">{fileError}</p>}
+          {fileError && (
+            <p id="delete-file-error" className="text-error text-sm mt-1" role="alert">
+              {fileError}
+            </p>
+          )}
         </fieldset>
 
         <div className="modal-action">
           <button
             ref={cancelButtonRef}
             type="button"
-            className="btn btn-ghost"
+            className="btn btn-ghost focus-visible:ring-2 focus-visible:ring-primary"
             onClick={onClose}
             disabled={isLoading}
           >
@@ -130,7 +153,7 @@ export function DeleteModal({
           </button>
           <button
             type="button"
-            className={`btn btn-error shadow-sm ${isLoading ? 'btn-disabled' : ''}`}
+            className={`btn btn-error shadow-sm focus-visible:ring-2 focus-visible:ring-primary ${isLoading ? 'btn-disabled' : ''}`}
             onClick={handleConfirm}
             disabled={isConfirmDisabled}
           >
@@ -152,4 +175,3 @@ export function DeleteModal({
     </div>
   );
 }
-
