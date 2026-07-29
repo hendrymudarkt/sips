@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -25,6 +25,10 @@ const HarvestGalleryView = dynamic(
     ssr: false,
   }
 );
+const HarvestJsonUploadModal = dynamic(() => import('@/app/components/features/harvest-json-upload-modal'), {
+  loading: () => null,
+  ssr: false,
+});
 import { useLocale } from '@/hooks/useLocale';
 import { useHarvestData } from '@/hooks/useHarvestData';
 import { QueryKeys } from '@/utils/queryKeys';
@@ -128,6 +132,9 @@ export default function HarvestPage() {
     handleGetLocation, fetchDetail,
     handleExport,
   } = useHarvestData();
+
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const canUpload = userLevel === 'ADM';
 
   const tourSteps: TourStep[] = useMemo(() => [
     {
@@ -423,6 +430,42 @@ export default function HarvestPage() {
         ),
       },
       {
+        name: <span>{tH('colTinggal')}</span>,
+        selector: r => r.tinggal || '-',
+        sortable: true,
+        width: '90px',
+        style: { justifyContent: 'end' },
+        cell: r => (
+          <span className="text-right w-full">
+            {formatPerfNumber(r._tinggalNum || 0, localeTag)}
+          </span>
+        ),
+      },
+      {
+        name: <span>{tH('colOutputAngkut')}</span>,
+        selector: r => r.output_pgkn || '-',
+        sortable: true,
+        width: '110px',
+        style: { justifyContent: 'end' },
+        cell: r => (
+          <span className="text-right w-full">
+            {formatPerfNumber(r._outputPgknNum || 0, localeTag)}
+          </span>
+        ),
+      },
+      {
+        name: <span>{tH('colSisa')}</span>,
+        selector: r => r.sisa_pgkn || '-',
+        sortable: true,
+        width: '90px',
+        style: { justifyContent: 'end' },
+        cell: r => (
+          <span className="text-right w-full">
+            {formatPerfNumber(r._sisaPgknNum || 0, localeTag)}
+          </span>
+        ),
+      },
+      {
         name: (
           <span title={tH('colLokasiTooltip')} className="text-center">
             {tH('colLokasi')}
@@ -461,6 +504,22 @@ export default function HarvestPage() {
           ),
       },
       {
+        name: <span>{tH('colStatusAngkut')}</span>,
+        selector: r => r.info_status_pengangkutan || '-',
+        sortable: true,
+        width: '200px',
+        cell: r => (
+          <span className={`badge whitespace-nowrap overflow-hidden text-ellipsis max-w-full ${
+            (r.status_pengangkutan || '').trim().toUpperCase() === 'TERANGKUT' ? 'badge-success'
+              : (r.status_pengangkutan || '').trim().toUpperCase() === 'BELUM' ? 'badge-error'
+              : (r.status_pengangkutan || '').trim().toUpperCase() === 'SELISIH' ? 'badge-warning'
+              : 'badge-ghost'
+          }`} title={r.info_status_pengangkutan || '-'}>
+            {r.info_status_pengangkutan || '-'}
+          </span>
+        ),
+      },
+      {
         name: <span title={tH('colFotoTooltip')}>{tH('colFoto')}</span>,
         width: '90px',
         cell: (r: Harvest) =>
@@ -480,6 +539,21 @@ export default function HarvestPage() {
       label: tH('totalJanjang'),
       value: harvestTotals.output,
       className: 'text-primary',
+    },
+    {
+      label: tH('totalTinggal'),
+      value: harvestTotals.tinggal,
+      className: 'text-accent',
+    },
+    {
+      label: tH('totalTerangkut'),
+      value: harvestTotals.output_pgkn,
+      className: 'text-info',
+    },
+    {
+      label: tH('totalSisa'),
+      value: harvestTotals.sisa_pgkn,
+      className: 'text-warning',
     },
     {
       label: tH('totalBrondolan'),
@@ -515,6 +589,13 @@ export default function HarvestPage() {
               icon: 'export',
               onClick: handleExport,
             },
+            ...(canUpload ? [{
+              key: 'upload-json',
+              label: 'Upload JSON',
+              icon: 'upload',
+              onClick: () => setUploadModalOpen(true),
+              variant: 'outline' as const,
+            }] : []),
             ...(canModify ? [{
               key: 'add',
               label: tH('addHarvest'),
@@ -621,6 +702,14 @@ export default function HarvestPage() {
               { key: 'afdeling', label: tH('filterAfdeling'), type: 'text', placeholder: tH('filterAfdeling'), disabled: isAfdelingLocked },
               { key: 'tph', label: tH('filterTph'), type: 'text', placeholder: tH('filterTph') },
               { key: 'fieldcode', label: tH('filterFieldcode'), type: 'text', placeholder: tH('filterFieldcode') },
+              { key: 'status_pengangkutan', label: tH('filterStatusAngkut'), type: 'select',
+                options: [
+                  { value: '', label: tH('filterAll') },
+                  { value: 'BELUM', label: 'BELUM' },
+                  { value: 'TERANGKUT', label: 'TERANGKUT' },
+                  { value: 'SELISIH', label: 'SELISIH' },
+                ]
+              },
             ]}
             values={filters}
             onChange={(key, value) => setFilters(s => ({ ...s, [key]: value }))}
@@ -629,6 +718,7 @@ export default function HarvestPage() {
               const resetFilters = {
                 tanggal: '', tanggal_end: '', nodokumen: '', kode_karyawan: '',
                 kemandoran: '', fcba: '', afdeling: '', tph: '', fieldcode: '',
+                status_pengangkutan: '',
               };
               setFilters(getScopedFilters(resetFilters));
             }}
@@ -1244,6 +1334,16 @@ export default function HarvestPage() {
       )}
 
       <DeleteModal open={deleteOpen} onClose={closeDeleteModal} onConfirm={handleConfirmDelete} isLoading={deleteMutation.isPending} />
+
+      {uploadModalOpen && (
+        <HarvestJsonUploadModal
+          open={uploadModalOpen}
+          onClose={() => {
+            setUploadModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: QueryKeys.HARVEST() });
+          }}
+        />
+      )}
     </div>
   );
 }

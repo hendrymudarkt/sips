@@ -17,6 +17,7 @@ const querySchema = z
     fcba: z.string().optional(),
     afdeling: z.string().optional(),
     status_harvesting: z.string().optional(),
+    status_pengangkutan: z.string().optional(),
     kemandoran: z.string().optional(),
     nodokumen: z.string().optional(),
     kode_karyawan: z.string().optional(),

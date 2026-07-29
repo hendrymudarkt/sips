@@ -31,6 +31,8 @@ export function buildFilteredUrl(base: string, searchParams: URLSearchParams) {
     'nodokumen',
     'tph',
     'fieldcode',
+    'status_harvesting',
+    'status_pengangkutan',
   ];
   validParams.forEach(key => {
     const v = searchParams.get(key);

@@ -203,6 +203,65 @@ export const uploadSubmitSchema = z.object({
   ),
 });
 
+// Harvest Import Schema (untuk upload JSON file)
+export const harvestImportItemSchema = z.object({
+  nodokumen: z.string().optional(),
+  tanggal: z.string().optional(),
+  kode_karyawan: z.string().optional(),
+  nama_karyawan: z.string().optional(),
+  noancak: z.string().optional(),
+  tph: z.string().optional(),
+  fieldcode: z.string().optional(),
+  afdeling: z.string().optional(),
+  fcba: z.string().optional(),
+  output: z.union([z.string(), z.number()]).optional(),
+  output_ai: z.union([z.string(), z.number()]).optional(),
+  mentah: z.union([z.string(), z.number()]).optional(),
+  overripe: z.union([z.string(), z.number()]).optional(),
+  busuk: z.union([z.string(), z.number()]).optional(),
+  busuk2: z.union([z.string(), z.number()]).optional(),
+  buahkecil: z.union([z.string(), z.number()]).optional(),
+  parteno: z.union([z.string(), z.number()]).optional(),
+  parteno50plus: z.union([z.string(), z.number()]).optional(),
+  brondol: z.union([z.string(), z.number()]).optional(),
+  tangkaipanjang: z.union([z.string(), z.number()]).optional(),
+  alasbrondol: z.string().optional(),
+  kemandoran: z.string().optional(),
+  location: z.string().optional(),
+  status_harvesting: z.string().optional(),
+  created_by: z.string().optional(),
+  kode_karyawan_kerani: z.string().optional(),
+  nama_karyawan_kerani: z.string().optional(),
+  kode_karyawan_mandor1: z.string().optional(),
+  kode_karyawan_mandor_panen: z.string().optional(),
+  images: z.string().optional(),
+  no_ba_exca: z.string().optional(),
+  exception_case: z.string().optional(),
+  id_device: z.string().optional(),
+  card_id: z.string().optional(),
+  local_image_path: z.string().optional(),
+  afdeling_destination: z.string().optional(),
+  fcba_destination: z.string().optional(),
+  status_docket: z.string().optional(),
+  id: z.union([z.string(), z.number()]).optional(),
+  _rowKey: z.string().optional(),
+  _searchContent: z.string().optional(),
+  _outputNum: z.number().optional(),
+  _mentahNum: z.number().optional(),
+  _overNum: z.number().optional(),
+  _busukNum: z.number().optional(),
+  _busuk2Num: z.number().optional(),
+  _kecilNum: z.number().optional(),
+  _partenoNum: z.number().optional(),
+  _parteno50Num: z.number().optional(),
+  _brondolNum: z.number().optional(),
+  _panjangNum: z.number().optional(),
+}).passthrough();
+
+export const harvestImportSchema = z.object({
+  data: z.array(harvestImportItemSchema).min(1, 'Data tidak boleh kosong'),
+});
+
 // LHM Data Schema (untuk Open & Approval LHM)
 export const lhmSubmitSchema = z.object({
   data: z.array(

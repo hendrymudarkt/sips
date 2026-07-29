@@ -178,6 +178,11 @@ export type Harvest = {
   parteno50plus: string;
   status_assistensi?: string | null;
   status_harvesting: string;
+  status_pengangkutan?: string | null;
+  info_status_pengangkutan?: string | null;
+  sisa_pgkn?: string | null;
+  output_pgkn?: string | null;
+  tinggal?: string | null;
   kemandoran?: string | null;
   images?: string | null;
   no_ba_exca?: string | null;
@@ -187,6 +192,10 @@ export type Harvest = {
   card_id?: string | null;
   created_at?: string | null;
   created_by?: string | null;
+
+  _outputPgknNum?: number;
+  _sisaPgknNum?: number;
+  _tinggalNum?: number;
 };
 
 export type HarvestFormState = {
@@ -268,6 +277,7 @@ export type HarvestFilters = Partial<{
   tph: string;
   fieldcode: string;
   kemandoran: string;
+  status_pengangkutan: string;
 }>;
 
 export type Transport = {

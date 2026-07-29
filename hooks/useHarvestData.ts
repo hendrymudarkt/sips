@@ -308,6 +308,7 @@ export function useHarvestData() {
       if (filters.tph) p.tph = filters.tph;
       if (filters.fieldcode) p.fieldcode = filters.fieldcode;
       if (filters.kemandoran) p.kemandoran = filters.kemandoran;
+      if (filters.status_pengangkutan) p.status_pengangkutan = filters.status_pengangkutan;
 
       const res = await fetchHarvestList(p);
 
@@ -347,6 +348,7 @@ export function useHarvestData() {
           it.tph,
           it.fieldcode,
           it.status_harvesting,
+          it.status_pengangkutan,
           it.kemandoran,
           dateOnly,
         ]
@@ -373,6 +375,9 @@ export function useHarvestData() {
           _parteno50Num: toNumber(it.parteno50plus),
           _brondolNum: toNumber(it.brondol),
           _panjangNum: toNumber(it.tangkaipanjang),
+          _outputPgknNum: toNumber(it.output_pgkn),
+          _sisaPgknNum: toNumber(it.sisa_pgkn),
+          _tinggalNum: toNumber(it.tinggal),
         };
       });
     },
@@ -1258,6 +1263,9 @@ export function useHarvestData() {
       overripe: 0,
       busuk: 0,
       brondol: 0,
+      output_pgkn: 0,
+      sisa_pgkn: 0,
+      tinggal: 0,
     };
 
     for (const it of items) {
@@ -1269,6 +1277,9 @@ export function useHarvestData() {
         totals.overripe += it._overNum || 0;
         totals.busuk += it._busukNum || 0;
         totals.brondol += it._brondolNum || 0;
+        totals.output_pgkn += (it._outputPgknNum ?? 0);
+        totals.sisa_pgkn += (it._sisaPgknNum ?? 0);
+        totals.tinggal += (it._tinggalNum ?? 0);
       }
     }
 
