@@ -3,7 +3,6 @@
 import { useState, forwardRef, useImperativeHandle, useCallback, memo } from 'react';
 import { PhotoCell } from '@/app/components/ui/photo-cell';
 import { EmptyState } from '@/app/components/feedback/empty-state';
-import { getProxiedImageUrl } from '@/utils/helpers/imageHelper';
 import { buildMapUrl } from '@/utils/services/mapHelper';
 import { Icon, type IconName } from '@/app/components/ui/icons';
 import { useTranslations } from 'next-intl';
@@ -173,7 +172,7 @@ const HarvestCard = memo(function HarvestCard({
           <div className="shrink-0">
             <PhotoCell
               imageUrl={item.images}
-              href={item.images ? getProxiedImageUrl(item.images) : undefined}
+              href={item.images || undefined}
               size={72}
             />
           </div>
