@@ -60,15 +60,19 @@ export async function GET(req: NextRequest) {
           cache: 'no-store',
         });
 
-        if (!response.ok) return '-';
+        if (!response.ok) {
+          throw new Error(`Upstream returned status ${response.status}`);
+        }
 
         const data = await response.json();
         if (data.success && Array.isArray(data.data) && data.data.length > 0) {
           return data.data[0].fullname || '-';
         }
         return '-';
-      } catch {
-        return '-';
+      } catch (e) {
+        // If it's a connection/network or upstream response error, propagate it
+        // so that the API correctly returns 500 instead of masking database errors.
+        throw e;
       }
     };
 

@@ -86,7 +86,11 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
         json: async () => ({ message: 'Detailed SQL error at 10.0.0.5' }),
       } as Response);
 
-      const req = new NextRequest('http://localhost/api/harvest/123', { method: 'PUT' });
+      const formData = new FormData();
+      const req = new NextRequest('http://localhost/api/harvest/123', {
+        method: 'PUT',
+        body: formData,
+      });
       const res = await PUT(req, context);
 
       expect(res.status).toBe(500);

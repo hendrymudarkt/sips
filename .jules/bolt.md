@@ -53,3 +53,7 @@
 ## 2026-07-20 - [Redundant Cookie Parsing and Object Allocation]
 **Learning:** Even with a single-pass cookie parser (`getCookiesMap`), repeatedly fetching individual cookie values (e.g., fullName, level, section, etc.) across the rendering lifecycle triggers multiple full parses of `document.cookie`, leading to unnecessary CPU and memory allocation churn.
 **Action:** Implement string-identity comparison cache in the parser. Since `document.cookie` is a browser getter, comparing its current string reference/value to a stored `lastCookieString` allows returning a fully-parsed cached map directly in O(1) time if unchanged.
+
+## 2026-07-22 - [Lexicographical Date Comparison Optimization]
+**Learning:** Sorting date strings using `localeCompare()` inside a React hook or render loop introduces significant internationalization collation overhead. Because ISO-8601 formatted date strings (`YYYY-MM-DD`) are inherently chronological, standard comparison operators (`>` and `<`) yield the exact same order while executing up to 100x faster.
+**Action:** Avoid `localeCompare` when sorting ISO date strings, using direct lexicographical operators (`>` and `<`) to eliminate internationalization performance penalties on large datasets.
