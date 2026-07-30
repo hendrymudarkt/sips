@@ -44,6 +44,42 @@ describe('SearchSelect', () => {
     expect(screen.getByRole('listbox')).toBeDefined();
   });
 
+  it('opens dropdown on ArrowDown key press on trigger', () => {
+    render(<SearchSelect {...defaultProps} />);
+
+    const button = screen.getByRole('button');
+    fireEvent.keyDown(button, { key: 'ArrowDown' });
+
+    expect(screen.getByRole('listbox')).toBeDefined();
+  });
+
+  it('opens dropdown on ArrowUp key press on trigger', () => {
+    render(<SearchSelect {...defaultProps} />);
+
+    const button = screen.getByRole('button');
+    fireEvent.keyDown(button, { key: 'ArrowUp' });
+
+    expect(screen.getByRole('listbox')).toBeDefined();
+  });
+
+  it('opens dropdown on Enter key press on trigger', () => {
+    render(<SearchSelect {...defaultProps} />);
+
+    const button = screen.getByRole('button');
+    fireEvent.keyDown(button, { key: 'Enter' });
+
+    expect(screen.getByRole('listbox')).toBeDefined();
+  });
+
+  it('opens dropdown on Space key press on trigger', () => {
+    render(<SearchSelect {...defaultProps} />);
+
+    const button = screen.getByRole('button');
+    fireEvent.keyDown(button, { key: ' ' });
+
+    expect(screen.getByRole('listbox')).toBeDefined();
+  });
+
   it('filters options on search input', () => {
     render(<SearchSelect {...defaultProps} />);
 
