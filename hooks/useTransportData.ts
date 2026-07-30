@@ -6,7 +6,7 @@ import type { Option } from '@/app/components/ui/search-select';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { cookieStore } from '@/utils/auth/cookieStore';
 import { getFilterCriteria, getLockedFields } from '@/utils/helpers/filterHelper';
-import { formatPerfDate } from '@/utils/helpers/perf-formatter';
+import { formatPerfDate, getCachedCollator } from '@/utils/helpers/perf-formatter';
 import { fetchBusinessUnits } from '@/utils/services/businessUnitService';
 import { fetchMasterUsers as fetchMasterUsersService, fetchTransportList } from '@/utils/services/transportService';
 import { extractArrayData } from '@/utils/api/apiHelpers';
@@ -238,14 +238,16 @@ export function useTransportData() {
   });
 
   const kendaraanOptionsAsOptions: Option[] = useMemo(
-    () =>
-      kendaraanData
+    () => {
+      const collator = getCachedCollator('id-ID');
+      return kendaraanData
         .filter(row => row.fccode)
         .map(row => ({
           value: String(row.fccode),
           label: `${String(row.fccode)} - ${String(row.fcname || '')}`,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) => collator.compare(a.label, b.label));
+    },
     [kendaraanData]
   );
 
@@ -1052,12 +1054,13 @@ export function useTransportData() {
 
   const tkbmOptions: Option[] = useMemo(() => {
     if (!tkbmAttendanceData.length) return [];
+    const collator = getCachedCollator('id-ID');
     return tkbmAttendanceData
       .map(e => ({
         value: e.fccode,
         label: e.fullname ? `${e.fccode} - ${e.fullname}` : e.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
   }, [tkbmAttendanceData]);
 
   const tkbmOptions2 = useMemo(
@@ -1088,26 +1091,30 @@ export function useTransportData() {
   );
 
   const keraniOptionsAsOptions: Option[] = useMemo(
-    () =>
-      keraniOptions
+    () => {
+      const collator = getCachedCollator('id-ID');
+      return keraniOptions
         .filter(k => k.idkaryawan)
         .map(k => ({
           value: String(k.idkaryawan),
           label: k.fullname ? `${k.idkaryawan} - ${k.fullname}` : String(k.idkaryawan),
         }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) => collator.compare(a.label, b.label));
+    },
     [keraniOptions]
   );
 
   const driverOptionsAsOptions: Option[] = useMemo(
-    () =>
-      driverOptions
+    () => {
+      const collator = getCachedCollator('id-ID');
+      return driverOptions
         .filter(d => d.fccode)
         .map(d => ({
           value: d.fccode,
           label: `${d.fccode} - ${d.fullname}`,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) => collator.compare(a.label, b.label));
+    },
     [driverOptions]
   );
 
