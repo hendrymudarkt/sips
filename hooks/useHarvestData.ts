@@ -12,7 +12,7 @@ import { initialHarvestForm } from '@/types/domain';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
 import { getProxiedImageUrl } from '@/utils/helpers/imageHelper';
-import { formatPerfDate } from '@/utils/helpers/perf-formatter';
+import { formatPerfDate, getCachedCollator } from '@/utils/helpers/perf-formatter';
 import { useLocale } from '@/hooks/useLocale';
 import { getTodayISO, getYesterdayISO } from '@/utils/helpers/datetime';
 import { cookieStore } from '@/utils/auth/cookieStore';
@@ -679,8 +679,9 @@ export function useHarvestData() {
         set.set(notph, notph);
       }
     }
+    const collator = getCachedCollator('id-ID');
     return Array.from(set, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      collator.compare(a.label, b.label)
     );
   }, [tphDetailData]);
 
@@ -950,16 +951,17 @@ export function useHarvestData() {
   );
 
   const fcbaOptions = useMemo(() => {
+    const collator = getCachedCollator('id-ID');
     if (businessUnits && businessUnits.length) {
       return businessUnits
         .map(b => ({
           value: b.fccode,
           label: b.fcname ? `${b.fccode} - ${b.fcname}` : b.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
     return Array.from(new Set(triplets.map(t => t.fcba).filter(Boolean)))
-      .sort()
+      .sort((a, b) => collator.compare(a, b))
       .map(v => ({ value: v, label: v }));
   }, [triplets, businessUnits]);
 
@@ -1085,12 +1087,13 @@ export function useHarvestData() {
 
   const employeeOptions = useMemo(() => {
     if (!employeesByGang.length) return [];
+    const collator = getCachedCollator('id-ID');
     return employeesByGang
       .map(e => ({
         value: e.fccode,
         label: e.fullname ? `${e.fccode} - ${e.fullname}` : e.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
   }, [employeesByGang]);
 
   const onChangeFcba = (v: string) => {
