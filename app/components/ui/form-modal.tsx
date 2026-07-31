@@ -1,6 +1,7 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Icon } from './icons';
 
 interface FormModalProps {
   open: boolean;
@@ -17,6 +18,14 @@ interface FormModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
 }
 
+/**
+ * 🎨 Palette Enhancement: FormModal component.
+ * - Improved accessibility with ARIA roles, labels, and focus management.
+ * - Gated Escape key down handler for keyboard dismissal, guarded by loading state.
+ * - Store the previously focused element and return focus to it on close/unmount.
+ * - Uses <Icon name="close" /> for modern and consistent visual polish.
+ * - Explicit focus-visible rings for high-standard accessibility.
+ */
 export function FormModal({
   open,
   title,
@@ -31,6 +40,35 @@ export function FormModal({
   children,
   size = 'lg',
 }: FormModalProps) {
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  // Focus management: store previous active element and shift focus on open, restore on close/unmount
+  useEffect(() => {
+    if (open) {
+      previouslyFocusedRef.current = document.activeElement as HTMLElement;
+      const timer = setTimeout(() => {
+        cancelButtonRef.current?.focus();
+      }, 50);
+      return () => {
+        clearTimeout(timer);
+        previouslyFocusedRef.current?.focus();
+      };
+    }
+  }, [open]);
+
+  // Escape key handler for accessible keyboard dismissal
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, loading, onClose]);
+
   if (!open) return null;
 
   const sizeClass =
@@ -48,12 +86,12 @@ export function FormModal({
             <h3 className="font-bold text-xl">{title}</h3>
             <button
               type="button"
-              className="btn btn-sm btn-circle btn-ghost"
+              className="btn btn-sm btn-circle btn-ghost focus-visible:ring-2 focus-visible:ring-primary"
               onClick={onClose}
               aria-label="Close"
               disabled={loading}
             >
-              ✕
+              <Icon name="close" className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -77,14 +115,20 @@ export function FormModal({
 
         <div className="sticky bottom-0 z-10 bg-base-100 pt-2 -mx-2 sm:-mx-6 px-2 sm:px-6 border-t border-base-300">
           <div className="flex flex-wrap gap-2 justify-end">
-            <button type="button" className="btn" onClick={onClose} disabled={loading}>
+            <button
+              ref={cancelButtonRef}
+              type="button"
+              className="btn focus-visible:ring-2 focus-visible:ring-primary"
+              onClick={onClose}
+              disabled={loading}
+            >
               {cancelText}
             </button>
             {onSubmit && (
               <button
                 type="submit"
                 form={formId}
-                className={`btn btn-primary ${loading ? 'btn-disabled' : ''}`}
+                className={`btn btn-primary focus-visible:ring-2 focus-visible:ring-primary ${loading ? 'btn-disabled' : ''}`}
                 disabled={loading || confirmDisabled}
               >
                 {loading ? <span className="loading loading-spinner" /> : confirmText}

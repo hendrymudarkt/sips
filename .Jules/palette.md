@@ -80,3 +80,8 @@
 **Learning:** For custom select/combobox triggers (like `SearchSelect`), keyboard accessibility must start on the trigger button. Implementing support for standard keyboard events (`ArrowDown`, `ArrowUp`, `Enter`, and `Space`) on the trigger button to open the menu and transition focus to the auto-focused search input creates a seamless, standard-compliant experience. Additionally, explicit `focus-visible` ring indicators are critical for keeping keyboard-only users oriented.
 
 **Action:** Always map standard select trigger keyboard keys on custom dropdown buttons to open the select, and apply explicit focus rings (`focus-visible:ring-2 focus-visible:ring-primary/40`) to make the focused state highly recognizable.
+
+## 2026-03-27 - [Accessible Reusable Modal Focus & Escape Flow]
+**Learning:** Reusable containers like `FormModal` are easily overlooked for keyboard navigation and screen-reader accessibility. Storing and restoring the previously active document element (`document.activeElement`) during modal transitions, paired with a gated `Escape` listener that respects active loading/saving locks, provides standard-compliant screen-reader orientation and a seamless user experience.
+
+**Action:** When creating or hardening interactive modal wrappers, always capture and restore active elements using React `useRef` and hook cleanup functions, and safeguard all escape dismissals with loading flags.
