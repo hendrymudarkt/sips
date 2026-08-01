@@ -88,7 +88,12 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
   const incoming = await req.formData();
   const baDeleted = incoming.get('ba_deleted');
-  if (!(baDeleted instanceof File)) {
+  if (
+    !(
+      baDeleted instanceof File ||
+      (baDeleted && typeof (baDeleted as unknown as { name?: string }).name === 'string')
+    )
+  ) {
     return NextResponse.json({ ok: false, error: 'BA delete PDF wajib diisi' }, { status: 400 });
   }
 
@@ -131,7 +136,12 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   if (methodOverride.toUpperCase() === 'DELETE') {
     const baDeleted = incoming.get('ba_deleted');
-    if (!(baDeleted instanceof File)) {
+    if (
+      !(
+        baDeleted instanceof File ||
+        (baDeleted && typeof (baDeleted as unknown as { name?: string }).name === 'string')
+      )
+    ) {
       return NextResponse.json({ ok: false, error: 'BA delete PDF wajib diisi' }, { status: 400 });
     }
 
@@ -159,5 +169,3 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
 
   return NextResponse.json({ ok: false, error: 'Method Not Allowed' }, { status: 405 });
 }
-
-

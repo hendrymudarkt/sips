@@ -18,15 +18,18 @@ vi.mock('@/utils/api/upstreamProxy', () => ({
 }));
 
 vi.mock('@/lib/api/apiProxy', () => ({
-  parseJsonSafe: vi.fn((res) => res.json().then((data: unknown) => ({ data, parseError: false }))),
+  parseJsonSafe: vi.fn(res => res.json().then((data: unknown) => ({ data, parseError: false }))),
 }));
 
-describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
+describe('Harvest ID API Security', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   const context = { params: Promise.resolve({ id: '123' }) };
 
-  describe('GET handler', () => {it('should return 401 if no token', async () => {
+  describe('GET handler', () => {
+    it('should return 401 if no token', async () => {
       const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
@@ -37,7 +40,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
       expect(res.status).toBe(401);
     });
 
-    it('should return generic error message on upstream failure', async () => {vi.mocked(global.fetch).mockResolvedValue({
+    it('should return generic error message on upstream failure', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => JSON.stringify({ message: 'DB error: connection refused' }),
@@ -53,7 +57,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
     });
   });
 
-  describe('PUT handler', () => {it('should return security error if validateSecurity fails', async () => {
+  describe('PUT handler', () => {
+    it('should return security error if validateSecurity fails', async () => {
       const errorResponse = new Response(JSON.stringify({ ok: false, error: 'Security fail' }), {
         status: 403,
       }) as unknown as NextResponse;
@@ -66,7 +71,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
       expect(res.status).toBe(403);
     });
 
-    it('should return 401 if no token', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
+    it('should return 401 if no token', async () => {
+      vi.mocked(validateSecurity).mockResolvedValue(null);
       const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
@@ -77,7 +83,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
       expect(res.status).toBe(401);
     });
 
-    it('should return generic error message on upstream failure', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
+    it('should return generic error message on upstream failure', async () => {
+      vi.mocked(validateSecurity).mockResolvedValue(null);
 
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
@@ -86,7 +93,11 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
         json: async () => ({ message: 'Detailed SQL error at 10.0.0.5' }),
       } as Response);
 
-      const req = new NextRequest('http://localhost/api/harvest/123', { method: 'PUT' });
+      const formData = new FormData();
+      const req = new NextRequest('http://localhost/api/harvest/123', {
+        method: 'PUT',
+        body: formData,
+      });
       const res = await PUT(req, context);
 
       expect(res.status).toBe(500);
@@ -95,7 +106,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
     });
   });
 
-  describe('DELETE handler', () => {it('should return security error if validateSecurity fails', async () => {
+  describe('DELETE handler', () => {
+    it('should return security error if validateSecurity fails', async () => {
       const errorResponse = new Response(JSON.stringify({ ok: false, error: 'Security fail' }), {
         status: 403,
       }) as unknown as NextResponse;
@@ -108,7 +120,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
       expect(res.status).toBe(403);
     });
 
-    it('should return 401 if no token', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
+    it('should return 401 if no token', async () => {
+      vi.mocked(validateSecurity).mockResolvedValue(null);
       const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
@@ -119,7 +132,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
       expect(res.status).toBe(401);
     });
 
-    it('should return generic error message on upstream failure', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
+    it('should return generic error message on upstream failure', async () => {
+      vi.mocked(validateSecurity).mockResolvedValue(null);
 
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,
@@ -143,7 +157,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
     });
   });
 
-  describe('POST handler (method override)', () => {it('should return security error if validateSecurity fails', async () => {
+  describe('POST handler (method override)', () => {
+    it('should return security error if validateSecurity fails', async () => {
       const errorResponse = new Response(JSON.stringify({ ok: false, error: 'Security fail' }), {
         status: 403,
       }) as unknown as NextResponse;
@@ -156,7 +171,8 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
       expect(res.status).toBe(403);
     });
 
-    it('should return 401 if no token', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
+    it('should return 401 if no token', async () => {
+      vi.mocked(validateSecurity).mockResolvedValue(null);
       const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
