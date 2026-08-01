@@ -672,8 +672,7 @@ export default function PengangkutanPage() {
                     type="text"
                     className="input input-bordered w-full"
                     value={form.nopengangkutan}
-                    readOnly
-                    tabIndex={-1}
+                    onChange={e => setForm(s => ({ ...s, nopengangkutan: e.target.value }))}
                     required
                   />
                 </fieldset>
@@ -683,8 +682,7 @@ export default function PengangkutanPage() {
                     type="text"
                     className="input input-bordered w-full"
                     value={form.nospb}
-                    readOnly
-                    tabIndex={-1}
+                    onChange={e => setForm(s => ({ ...s, nospb: e.target.value }))}
                   />
                 </fieldset>
                 {form.nodokumen.trim() ? (
