@@ -90,3 +90,8 @@
 **Learning:** Pure CSS dropdown components (like DaisyUI's `dropdown-end`) often lack keyboard support and stay "sticky" when options inside are clicked, which degrades accessibility and user experience. Upgrading the trigger to a semantic HTML `<button type="button">`, pairing it with an `Escape` key listener that blurs `document.activeElement` and returns focus to the trigger, and programmatically blurring the focused element upon selecting dropdown options provides an incredibly fluid, accessible, and delightful interactive experience.
 
 **Action:** Always prefer native `<button>` elements for DaisyUI dropdown triggers. Provide robust keyboard dismissal with `Escape` that returns focus to the trigger, and programmatically blur the active element on dropdown selection to immediately collapse the persistent CSS-only dropdown menu.
+
+## 2026-03-29 - [Accessible Focus Rings & React 19 State Derivation for Interactive Image Thumbnails]
+**Learning:** Table components display dense visual content like photos via components like `PhotoCell`. When these photo cells act as anchors wrapping the image, screen readers and keyboard navigation require explicit `focus-visible` styles on the outer wrapper so users are never "lost" when navigating with a keyboard. Additionally, using React 19's state derivation pattern to reset image sources dynamically on prop updates removes `useEffect` overhead and prevents state-out-of-sync bugs.
+
+**Action:** Always wrap interactive image elements in native anchors with `focus-visible:ring-2 focus-visible:ring-primary` and explicit offsets for robust visual focus feedback. Use render-phase state updates (state derivation) to propagate dynamic prop changes to state without standard side-effects.
