@@ -53,3 +53,7 @@
 ## 2026-07-20 - [Redundant Cookie Parsing and Object Allocation]
 **Learning:** Even with a single-pass cookie parser (`getCookiesMap`), repeatedly fetching individual cookie values (e.g., fullName, level, section, etc.) across the rendering lifecycle triggers multiple full parses of `document.cookie`, leading to unnecessary CPU and memory allocation churn.
 **Action:** Implement string-identity comparison cache in the parser. Since `document.cookie` is a browser getter, comparing its current string reference/value to a stored `lastCookieString` allows returning a fully-parsed cached map directly in O(1) time if unchanged.
+
+## 2026-08-01 - [O(N log N) Sorting in Selectors with localeCompare]
+**Learning:** Calling `.localeCompare()` within `.sort()` inside hook selectors and memoized options triggers heavy, un-cached internationalization collation lookups up to $O(N \log N)$ times. This results in heavy UI stuttering as dataset sizes scale.
+**Action:** Use `getCachedCollator` from `utils/helpers/perf-formatter.ts` to retrieve and reuse a single cached instance of `Intl.Collator`, converting the instantiation/configuration overhead to $O(1)$.

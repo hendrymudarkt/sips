@@ -9,7 +9,7 @@ import { fetchGangs, fetchSections } from '@/utils/services/masterDataService';
 import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
-import { formatPerfDate } from '@/utils/helpers/perf-formatter';
+import { formatPerfDate, getCachedCollator } from '@/utils/helpers/perf-formatter';
 import { useSearchShortcut } from '@/hooks/useSearchShortcut';
 import { useLocale } from '@/hooks/useLocale';
 import type { Absensi, FormState, Filters, Triplet, Employee, EmployeesApiRow } from '@/types/domain';
@@ -653,16 +653,17 @@ export function useAttendanceData() {
   }, [form.attendance_type, homeFcba, homeSection, homeKemandoran, userLevel, isEditing]);
 
   const fcbaOptions = useMemo(() => {
+    const collator = getCachedCollator('id-ID');
     if (businessUnits && businessUnits.length) {
       return businessUnits
         .map(b => ({
           value: b.fccode,
           label: b.fcname ? `${b.fccode} - ${b.fcname}` : b.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
     return Array.from(new Set(triplets.map(t => t.fcba).filter(Boolean)))
-      .sort()
+      .sort((a, b) => collator.compare(a, b))
       .map(v => ({ value: v, label: v }));
   }, [triplets, businessUnits]);
 
@@ -679,6 +680,7 @@ export function useAttendanceData() {
 
   const sectionOptions = useMemo(() => {
     if (!selFcba) return [];
+    const collator = getCachedCollator('id-ID');
     const fcbaCode = resolveBusinessUnitCode(selFcba, buLookups);
     const sectionsFromMaster = masterSections
       .filter(section => section.fcba === fcbaCode)
@@ -690,7 +692,7 @@ export function useAttendanceData() {
             ? `${section.fccode} - ${section.fcname}`
             : section.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
 
     if (sectionsFromMaster.length) return sectionsFromMaster;
 
@@ -708,12 +710,13 @@ export function useAttendanceData() {
           .filter(Boolean)
       )
     )
-      .sort()
+      .sort((a, b) => collator.compare(a, b))
       .map(v => ({ value: v, label: v }));
   }, [triplets, selFcba, buLookups, masterSections, destSection]);
 
   const gangOptions = useMemo(() => {
     if (!selFcba || !selSection) return [];
+    const collator = getCachedCollator('id-ID');
     const gangsFromMaster = masterGangs
       .map(gang => ({
         value: gang.fccode,
@@ -722,7 +725,7 @@ export function useAttendanceData() {
             ? `${gang.fccode} - ${gang.fcname}`
             : gang.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
 
     if (gangsFromMaster.length) return gangsFromMaster;
 
@@ -738,7 +741,7 @@ export function useAttendanceData() {
           .filter(Boolean)
       )
     )
-      .sort()
+      .sort((a, b) => collator.compare(a, b))
       .map(v => ({ value: v, label: v }));
   }, [triplets, selFcba, selSection, buLookups, masterGangs]);
 
@@ -754,6 +757,7 @@ export function useAttendanceData() {
 
   const employeeOptions = useMemo(() => {
     if (!selFcba || !selSection || !selGang || !currentFcbaPreresolved) return [];
+    const collator = getCachedCollator('id-ID');
 
     const pool = employees.filter(
       e =>
@@ -772,29 +776,31 @@ export function useAttendanceData() {
       if (!map.has(value)) map.set(value, label);
     }
     return Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      collator.compare(a.label, b.label)
     );
   }, [employees, selFcba, selSection, selGang, currentFcbaPreresolved, buLookups]);
 
   const destOptions = useMemo(() => {
+    const collator = getCachedCollator('id-ID');
     if (businessUnits && businessUnits.length > 0) {
       return businessUnits
         .map(bu => ({
           value: bu.fccode,
           label: bu.fcname ? `${bu.fccode} - ${bu.fcname}` : bu.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
     if (optFcba && optFcba.length > 0) {
       return optFcba
         .map(fcba => ({ value: fcba, label: fcba }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
     return fcbaOptions;
   }, [optFcba, fcbaOptions, businessUnits]);
 
   const destSectionOptions = useMemo(() => {
     if (!destFcba) return [];
+    const collator = getCachedCollator('id-ID');
     return destSections
       .filter(section => section.fccode !== selSection)
       .map(section => ({
@@ -804,12 +810,13 @@ export function useAttendanceData() {
             ? `${section.fccode} - ${section.fcname}`
             : section.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
   }, [destFcba, destSections, selSection]);
 
   const mandorOptions = useMemo(() => {
     const fcba = currentFcbaForForm || form.fcba || homeFcbaCode || homeFcba || '';
     const section = selSection || form.section || homeSection || '';
+    const collator = getCachedCollator('id-ID');
 
     const isFcbaCurrent =
       currentFcbaPreresolved &&
@@ -839,7 +846,7 @@ export function useAttendanceData() {
       if (!map.has(value)) map.set(value, gangLabel ? `${gangLabel} - ${name || value}` : label);
     }
     return Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      collator.compare(a.label, b.label)
     );
   }, [
     employees,
