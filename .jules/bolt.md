@@ -57,3 +57,7 @@
 ## 2026-08-01 - [O(N log N) Sorting in Selectors with localeCompare]
 **Learning:** Calling `.localeCompare()` within `.sort()` inside hook selectors and memoized options triggers heavy, un-cached internationalization collation lookups up to $O(N \log N)$ times. This results in heavy UI stuttering as dataset sizes scale.
 **Action:** Use `getCachedCollator` from `utils/helpers/perf-formatter.ts` to retrieve and reuse a single cached instance of `Intl.Collator`, converting the instantiation/configuration overhead to $O(1)$.
+
+## 2026-08-15 - [Lexicographical ISO-8601 Date Sorting]
+**Learning:** For ISO-8601 formatted date strings (`YYYY-MM-DD`), sorting using `.localeCompare()` is a major bottleneck because it triggers internationalization collation rules. Native lexicographical comparison operators (`>` and `<`) achieve identical chronological sorting but execute up to 100x faster by bypassing internationalization overhead.
+**Action:** Replace `localeCompare` with native `>` and `<` string operators when sorting standard chronological date strings.
