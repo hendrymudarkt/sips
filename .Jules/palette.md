@@ -90,3 +90,8 @@
 **Learning:** Pure CSS dropdown components (like DaisyUI's `dropdown-end`) often lack keyboard support and stay "sticky" when options inside are clicked, which degrades accessibility and user experience. Upgrading the trigger to a semantic HTML `<button type="button">`, pairing it with an `Escape` key listener that blurs `document.activeElement` and returns focus to the trigger, and programmatically blurring the focused element upon selecting dropdown options provides an incredibly fluid, accessible, and delightful interactive experience.
 
 **Action:** Always prefer native `<button>` elements for DaisyUI dropdown triggers. Provide robust keyboard dismissal with `Escape` that returns focus to the trigger, and programmatically blur the active element on dropdown selection to immediately collapse the persistent CSS-only dropdown menu.
+
+## 2026-03-29 - [Localized and Accessible PageError Fallbacks]
+**Learning:** Client-side error screens (like `PageError` used in sub-route boundaries) are often left unlocalized and lack appropriate keyboard visual anchors. Enhancing error fallbacks with translation keys, explicit focus rings (`focus-visible:ring-2 focus-visible:ring-primary`), and entrance animations significantly improves keyboard navigation, visual reassurance, and accessibility.
+
+**Action:** Always wrap client error boundaries with localized `Errors` translation namespace strings. Pair the try-again actions with high-contrast, interactive focus rings and delightful pulsing alert/warning states to give users immediate feedback.
