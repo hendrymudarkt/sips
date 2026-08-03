@@ -27,4 +27,19 @@ describe('isValidRedirect', () => {
   it('should return false for paths starting with backslash', () => {
     expect(isValidRedirect('/\\evil.com')).toBe(false);
   });
+
+  it('should return false for paths containing backslashes, colons, double slashes, or encoded backslashes in the path component', () => {
+    expect(isValidRedirect('/foo\\bar')).toBe(false);
+    expect(isValidRedirect('/foo%5cbar')).toBe(false);
+    expect(isValidRedirect('/foo%5Cbar')).toBe(false);
+    expect(isValidRedirect('/foo//bar')).toBe(false);
+    expect(isValidRedirect('/foo:bar')).toBe(false);
+  });
+
+  it('should return true for valid paths containing colons or double slashes in query parameters or hash fragments', () => {
+    expect(isValidRedirect('/logs?since=2023-10-01T12:00:00Z')).toBe(true);
+    expect(isValidRedirect('/foo/bar?url=http://evil.com')).toBe(true);
+    expect(isValidRedirect('/search?q=status:active')).toBe(true);
+    expect(isValidRedirect('/dashboard#section:header')).toBe(true);
+  });
 });
