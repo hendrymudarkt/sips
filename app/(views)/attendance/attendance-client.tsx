@@ -23,7 +23,7 @@ import { fetchBusinessUnits } from '@/utils/services/businessUnitService';
 import type { SectionMaster } from '@/utils/services/masterDataService';
 import { fetchGangs, fetchSections } from '@/utils/services/masterDataService';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
-import { formatPerfDate } from '@/utils/helpers/perf-formatter';
+import { formatPerfDate, getCachedCollator } from '@/utils/helpers/perf-formatter';
 
 /* =========================
    T Y P E S
@@ -953,6 +953,7 @@ export default function Attendance() {
 
   /* ===== Options ===== */
   const fcbaOptions = useMemo(() => {
+    const collator = getCachedCollator('id-ID');
     // prefer list from businessUnits API if available
     if (businessUnits && businessUnits.length) {
       return businessUnits
@@ -960,10 +961,10 @@ export default function Attendance() {
           value: b.fccode,
           label: b.fcname ? `${b.fccode} - ${b.fcname}` : b.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
     return Array.from(new Set(triplets.map(t => t.fcba).filter(Boolean)))
-      .sort()
+      .sort(collator.compare)
       .map(v => ({ value: v, label: v }));
   }, [triplets, businessUnits]);
 
@@ -978,6 +979,7 @@ export default function Attendance() {
 
   const sectionOptions: Option[] = useMemo(() => {
     if (!selFcba) return [];
+    const collator = getCachedCollator('id-ID');
     const fcbaCode = resolveBusinessUnitCode(selFcba, buLookups);
     const sectionsFromMaster = masterSections
       .filter(section => section.fcba === fcbaCode)
@@ -989,7 +991,7 @@ export default function Attendance() {
             ? `${section.fccode} - ${section.fcname}`
             : section.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
 
     if (sectionsFromMaster.length) return sectionsFromMaster;
 
@@ -1011,12 +1013,13 @@ export default function Attendance() {
           .filter(Boolean)
       )
     )
-      .sort()
+      .sort(collator.compare)
       .map(v => ({ value: v, label: v }));
   }, [triplets, selFcba, buLookups, masterSections, destSection]);
 
   const gangOptions: Option[] = useMemo(() => {
     if (!selFcba || !selSection) return [];
+    const collator = getCachedCollator('id-ID');
     const gangsFromMaster = masterGangs
       .map(gang => ({
         value: gang.fccode,
@@ -1025,7 +1028,7 @@ export default function Attendance() {
             ? `${gang.fccode} - ${gang.fcname}`
             : gang.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
 
     if (gangsFromMaster.length) return gangsFromMaster;
 
@@ -1042,7 +1045,7 @@ export default function Attendance() {
           .filter(Boolean)
       )
     )
-      .sort()
+      .sort(collator.compare)
       .map(v => ({ value: v, label: v }));
   }, [triplets, selFcba, selSection, buLookups, masterGangs]);
 
@@ -1059,6 +1062,7 @@ export default function Attendance() {
 
   const employeeOptions: Option[] = useMemo(() => {
     if (!selFcba || !selSection || !selGang || !currentFcbaPreresolved) return [];
+    const collator = getCachedCollator('id-ID');
 
     const pool = employees.filter(
       e =>
@@ -1077,19 +1081,20 @@ export default function Attendance() {
       if (!map.has(value)) map.set(value, label);
     }
     return Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      collator.compare(a.label, b.label)
     );
   }, [employees, selFcba, selSection, selGang, currentFcbaPreresolved, buLookups]);
 
   // destination select options should include every FCBA, including the user's current FCBA.
   const destOptions = useMemo(() => {
+    const collator = getCachedCollator('id-ID');
     if (businessUnits && businessUnits.length > 0) {
       return businessUnits
         .map(bu => ({
           value: bu.fccode,
           label: bu.fcname ? `${bu.fccode} - ${bu.fcname}` : bu.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
 
     if (optFcba && optFcba.length > 0) {
@@ -1098,7 +1103,7 @@ export default function Attendance() {
           value: fcba,
           label: fcba,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
 
     return fcbaOptions;
@@ -1106,6 +1111,7 @@ export default function Attendance() {
 
   const destSectionOptions: Option[] = useMemo(() => {
     if (!destFcba) return [];
+    const collator = getCachedCollator('id-ID');
 
     return destSections
       .filter(section => section.fccode !== selSection)
@@ -1116,7 +1122,7 @@ export default function Attendance() {
             ? `${section.fccode} - ${section.fcname}`
             : section.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
   }, [destFcba, destSections, selSection]);
 
   const mandorOptions: Option[] = useMemo(() => {
@@ -1151,8 +1157,9 @@ export default function Attendance() {
       const name = (e.fullname || '').trim();
       if (!map.has(value)) map.set(value, gangLabel ? `${gangLabel} - ${name || value}` : label);
     }
+    const collator = getCachedCollator('id-ID');
     return Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      collator.compare(a.label, b.label)
     );
   }, [
     employees,
@@ -1569,8 +1576,10 @@ export default function Attendance() {
   }, [preview]);
 
   /* ===== Columns ===== */
-  const sortByLabel = (a: Absensi, b: Absensi, getLabel: (r: Absensi) => string) =>
-    getLabel(a).localeCompare(getLabel(b), undefined, { sensitivity: 'base' });
+  const sortByLabel = (a: Absensi, b: Absensi, getLabel: (r: Absensi) => string) => {
+    const collator = getCachedCollator('id-ID', { sensitivity: 'base' });
+    return collator.compare(getLabel(a), getLabel(b));
+  };
 
   const columns: TableColumn<Absensi>[] = useMemo(
     () => [
