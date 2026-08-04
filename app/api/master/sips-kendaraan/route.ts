@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { authHeaders, parseJsonSafe, isRecord } from '@/lib/api/apiProxy';
+import { validateSecurity } from '@/lib/auth/security';
+import { applyUserDataScope } from '@/utils/api/requestScope';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -8,12 +10,16 @@ export const runtime = 'nodejs';
 const KENDARAAN_BASE = `${BACKEND_URL}/api/master/sips-kendaraan`;
 
 export async function GET(req: NextRequest) {
+  const securityError = await validateSecurity(req);
+  if (securityError) return securityError;
+
   const token = req.cookies.get('auth_token')?.value;
   if (!token) {
     return NextResponse.json({ ok: false, error: 'Unauthenticated' }, { status: 401 });
   }
 
-  const url = `${KENDARAAN_BASE}?${req.nextUrl.searchParams.toString()}`;
+  const searchParams = applyUserDataScope(req, new URLSearchParams(req.nextUrl.searchParams.toString()));
+  const url = `${KENDARAAN_BASE}${searchParams.toString() ? `?${searchParams}` : ''}`;
 
   const upstream = await fetch(url, {
     headers: authHeaders(token),
@@ -42,4 +48,3 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ ok: true, data: [] });
 }
-
