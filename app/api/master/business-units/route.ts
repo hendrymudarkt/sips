@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL } from '@/utils/api/absensiProxy';
+import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { authHeaders } from '@/lib/api/apiProxy';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -52,6 +52,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const data = await response.json();
-  return NextResponse.json({ ok: true, data });
+  return NextResponse.json(
+    { ok: true, data },
+    {
+      headers: {
+        // SECURITY: Use private cache for potentially sensitive scoped data (CWE-524)
+        'Cache-Control': 'private, max-age=600, stale-while-revalidate=1200',
+      },
+    }
+  );
 }
 

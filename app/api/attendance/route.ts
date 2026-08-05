@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ABSENSI_BASE, buildFilteredUrl, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { ABSENSI_BASE, buildFilteredUrl, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { parseJsonSafe } from '@/lib/api/apiProxy';
 import { validateSecurity } from '@/lib/auth/security';
 import { attendanceFilterSchema, attendanceApiResponseSchema } from '@/lib/validations/attendance';
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
         data: rawData,
       });
 
-      // 404 / "tidak ditemukan" dari upstream → anggap empty dataset
+      // 404 / "tidak ditemukan" dari upstream â†’ anggap empty dataset
       const rawRecord =
         rawData && typeof rawData === 'object' && !Array.isArray(rawData)
           ? (rawData as Record<string, unknown>)

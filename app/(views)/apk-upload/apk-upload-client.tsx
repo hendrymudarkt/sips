@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { backendApiUrl } from '@/utils/auth/backendConfig';
 import { Icon } from '@/app/components/ui/icons';
+import { UploadLayout } from '@/app/components/ui/upload-layout';
 
 interface UploadFormData {
   platform: string;
@@ -378,12 +379,11 @@ export default function ApkUploadPage() {
   }
 
   if (!initCheck) {
-    return <div className="min-h-screen bg-base-100 p-6"></div>;
+    return <UploadLayout maxWidth="max-w-3xl" />;
   }
 
   return (
-    <div className="min-h-screen bg-base-100 p-6">
-      <div className="max-w-3xl mx-auto">
+    <UploadLayout maxWidth="max-w-3xl">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-base-content">Upload APK / IPA</h1>
@@ -707,8 +707,7 @@ export default function ApkUploadPage() {
             <li>Minimum version membatasi update hanya untuk versi tertentu</li>
           </ul>
         </div>
-      </div>
-    </div>
+      </UploadLayout>
   );
 }
 

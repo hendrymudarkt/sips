@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { applyUserDataScope } from '@/utils/api/requestScope';
 import { authHeaders, isRecord, parseJsonSafe } from '@/lib/api/apiProxy';
 import { sanitizeHtml, sanitizeFilename } from '@/lib/utils/inputSanitizer';

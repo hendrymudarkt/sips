@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { authHeaders, extractDataArray } from '@/lib/api/apiProxy';
 import { applyUserDataScope } from '@/utils/api/requestScope';
 
@@ -11,11 +11,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
-  // 🛡️  GUARD: Jangan hapus block ini. Parameter `fcba` sengaja dipertahankan
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ðŸ›¡ï¸  GUARD: Jangan hapus block ini. Parameter `fcba` sengaja dipertahankan
   //     eksplisit untuk keperluan destination/assistensi, meskipun
   //     applyUserDataScope akan meng-override-nya dengan FCBA user.
-  // ────────────────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const hasExplicitFcba = req.nextUrl.searchParams.has('fcba');
 
   const params = applyUserDataScope(req, new URLSearchParams(req.nextUrl.searchParams.toString()));
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (hasExplicitFcba) {
     params.set('fcba', req.nextUrl.searchParams.get('fcba')!);
   }
-  // ────────────────────────────────────────────────────────────────────────────
+  // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   // Filter allowed params for upstream
   const upstreamParams = new URLSearchParams();
@@ -48,6 +48,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const data = extractDataArray(await response.json());
-  return NextResponse.json({ ok: true, data });
+  return NextResponse.json(
+    { ok: true, data },
+    {
+      headers: {
+        // SECURITY: Use private cache for potentially sensitive scoped data (CWE-524)
+        'Cache-Control': 'private, max-age=600, stale-while-revalidate=1200',
+      },
+    }
+  );
 }
 

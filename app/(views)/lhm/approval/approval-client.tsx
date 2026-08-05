@@ -18,6 +18,10 @@ import { QuickSearch } from '@/app/components/ui/quick-search';
 import { FilterBar } from '@/app/components/ui/filter-bar';
 import { NumberCell } from '@/app/components/ui/number-cell';
 import { LhmActionCell } from '@/app/components/ui/lhm-action-cell';
+import { SummaryCards } from '@/app/components/ui/summary-cards';
+import { PageLayout } from '@/app/components/ui/page-layout';
+import { ConfirmModal } from '@/app/components/ui/confirm-modal';
+import { Toolbar } from '@/app/components/ui/toolbar';
 
 /* =========================
    T Y P E S
@@ -198,6 +202,7 @@ export default function Approval() {
   const [selectedRows, setSelectedRows] = useState<LhmData[]>([]);
   const [toggledClearRows, setToggledClearRows] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>(() => getEmptyFilters());
   const [appliedFilters, setAppliedFilters] = useState<Filters | null>(null);
@@ -569,17 +574,16 @@ export default function Approval() {
   }, []);
 
   /* ===== Approve (submit to upstream) ===== */
-  const handleApprove = async () => {
+  const handleApprove = () => {
     if (selectedRows.length === 0) {
       toast.error(tL('toastSelectApprove'));
       return;
     }
+    setConfirmOpen(true);
+  };
 
-    const confirmed = confirm(
-      tL('modalConfirmApprove', { count: selectedRows.length })
-    );
-    if (!confirmed) return;
-
+  const handleConfirmApprove = async () => {
+    setConfirmOpen(false);
     setSubmitting(true);
     try {
       // Map selected rows ? baca HA dari `items` (source of truth) karena
@@ -1042,75 +1046,31 @@ export default function Approval() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-base-200 w-full">
-      <div className="p-4 sm:p-6 max-w-screen-2xl mx-auto w-full overflow-x-hidden space-y-4">
+    <PageLayout>
         {/* Header */}
-        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-2 items-start animate-slideUp">
-          <h1
-            className="text-2xl sm:text-3xl font-bold min-w-0 truncate"
-            title={tL('pageTitleApprovalTooltip')}
+        <Toolbar
+          title={tL('pageTitleApproval')}
+          titleTooltip={tL('pageTitleApprovalTooltip')}
+          actions={[
+            { key: 'filter', label: showFilters ? tL('hideFilters') : tL('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
+            { key: 'refresh', label: loading ? tL('loading') : tL('refresh'), icon: 'refresh', onClick: () => fetchData(appliedFilters ?? getScopedFilters(filters)), disabled: loading, loading, variant: 'outline' },
+          ]}
+        >
+          <AppTour steps={tourSteps} storageKey="tour-approval-lhm" onStepChange={handleTourStepChange} btnClassName="join-item flex-1 sm:flex-none" />
+          <ExportButton onClick={handleExport} label={tL('export')} />
+          <button
+            className="btn btn-primary btn-sm flex-1 sm:flex-none join-item"
+            onClick={handleApprove}
+            disabled={selectedRows.length === 0 || submitting}
+            data-tour="approve-button"
           >
-            {tL('pageTitleApproval')}
-          </h1>
-          <div
-            className="flex justify-start sm:justify-end flex-wrap w-full join"
-            data-tour="action-buttons"
-          >
-            <AppTour
-              steps={tourSteps}
-              storageKey="tour-approval-lhm"
-              onStepChange={handleTourStepChange}
-              btnClassName="join-item flex-1 sm:flex-none"
-            />
-            <button
-              className="btn btn-outline btn-sm flex-1 sm:flex-none join-item"
-              onClick={() => setShowFilters(s => !s)}
-              title={tL('filterToggleTooltip')}
-              data-tour="filter-button"
-            >
-              <Icon name="filter" className="h-4 w-4" />
-              <span className="hidden sm:inline">{showFilters ? tL('hideFilters') : tL('showFilters')}</span>
-            </button>
-            <button
-              className={`btn btn-outline btn-sm flex-1 sm:flex-none join-item ${loading ? 'btn-disabled' : ''}`}
-              onClick={() => fetchData(appliedFilters ?? getScopedFilters(filters))}
-              disabled={loading}
-              title={tL('refreshTooltip')}
-            >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-xs" />
-                  <span className="hidden sm:inline">{tL('loading')}</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="refresh" className="h-4 w-4" />
-                  <span className="hidden sm:inline">{tL('refresh')}</span>
-                </>
-              )}
-            </button>
-            <ExportButton onClick={handleExport} label={tL('export')} />
-            <button
-              className={`btn btn-primary btn-sm flex-1 sm:flex-none join-item ${submitting ? 'btn-disabled' : ''}`}
-              onClick={handleApprove}
-              disabled={selectedRows.length === 0 || submitting}
-              title="Approve data LHM yang dipilih"
-              data-tour="approve-button"
-            >
-              {submitting ? (
-                <>
-                  <span className="loading loading-spinner loading-xs" />
-                  <span className="hidden sm:inline">Approving...</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="check" className="h-4 w-4" />
-                  <span className="hidden sm:inline">{`Approve (${selectedRows.length})`}</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+            {submitting ? (
+              <><span className="loading loading-spinner loading-xs" /><span className="hidden sm:inline">Approving...</span></>
+            ) : (
+              <><Icon name="check" className="h-4 w-4" /><span className="hidden sm:inline">{`Approve (${selectedRows.length})`}</span></>
+            )}
+          </button>
+        </Toolbar>
 
         {/* Selected info */}
         {selectedRows.length > 0 && (
@@ -1135,18 +1095,8 @@ export default function Approval() {
         {/* Quick Search + Total Cards */}
         <div className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 animate-slideUp [animation-delay:100ms]">
           {/* Total Cards */}
-          <div className="flex gap-2 overflow-x-auto flex-1 min-w-0" data-tour="total-cards">
-            {totalCards.map(card => (
-              <div
-                key={card.label}
-                className="bg-base-100 border border-base-200 rounded-lg px-3 py-2 shadow-sm whitespace-nowrap shrink-0"
-              >
-                <div className="text-[10px] opacity-70 leading-none">{card.label}</div>
-                <div className={`text-sm font-semibold ${card.className}`}>
-                  {formatPerfNumber(String(card.value), localeTag)}
-                </div>
-              </div>
-            ))}
+          <div data-tour="total-cards" className="flex-1 min-w-0">
+            <SummaryCards cards={totalCards.map(c => ({ ...c, value: formatPerfNumber(String(c.value), localeTag) }))} />
           </div>
           <QuickSearch
             value={q}
@@ -1158,7 +1108,8 @@ export default function Approval() {
 
         {/* Filter Bar */}
         {showFilters && (
-          <FilterBar
+          <>
+            <FilterBar
             fields={[
               { key: 'fddate', label: 'Tgl Awal', type: 'date', placeholder: tL('filterDateStart') },
               { key: 'fddate_end', label: 'Tgl Akhir', type: 'date', placeholder: tL('filterDateEnd') },
@@ -1195,6 +1146,36 @@ export default function Approval() {
             showApply
             showReset
           />
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+            <input
+              className="input input-bordered w-full"
+              placeholder="Tahun Tanam"
+              value={filters.tahuntanam ?? ''}
+              onChange={e => setFilters(s => ({ ...s, tahuntanam: e.target.value }))}
+              title="Filter berdasarkan tahun tanam"
+            />
+            <input
+              className="input input-bordered w-full"
+              placeholder="Blok"
+              value={filters.blok ?? ''}
+              onChange={e => setFilters(s => ({ ...s, blok: e.target.value }))}
+              title="Filter berdasarkan kode blok"
+            />
+            <select
+              className="select select-bordered w-full"
+              value={filters.attendance ?? ''}
+              onChange={e => setFilters(s => ({ ...s, attendance: e.target.value }))}
+              title="Filter berdasarkan kode attendance"
+            >
+              <option value="">Attendance</option>
+              {['KJ', 'MK', 'WH', 'WS', 'ML', 'P1', 'KB', 'OT'].map(v => (
+                <option key={`att-${v}`} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+          </>
         )}
 
         {/* Error */}
@@ -1211,8 +1192,15 @@ export default function Approval() {
           namespace="Lhm"
           onClearSearch={q ? () => setQ('') : undefined}
         />
-      </div>
-    </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Konfirmasi"
+        message={tL('modalConfirmApprove', { count: selectedRows.length })}
+        onConfirm={handleConfirmApprove}
+        onCancel={() => setConfirmOpen(false)}
+        loading={submitting}
+      />
+    </PageLayout>
   );
 }
 

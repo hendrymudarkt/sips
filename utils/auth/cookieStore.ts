@@ -37,15 +37,25 @@ const GANG_VARIANTS = [
 ];
 const PHOTO_VARIANTS = ['user_Photo', 'user_photo'];
 
+/* ⚡ Bolt: Module-level cache to avoid redundant split/parse of unchanged cookie strings */
+let lastCookieString = '';
+let cachedCookies: Record<string, string> = {};
+
 /**
  * ⚡ Bolt Optimization: Parses all cookies into a plain object in a single pass.
- * This is significantly faster than repeated regex matches on document.cookie.
+ * Caches the parsed result based on document.cookie string identity to avoid split, trim,
+ * and decode overhead on subsequent calls during the same render cycle/tick.
  */
 const getCookiesMap = (): Record<string, string> => {
-  const cookies: Record<string, string> = {};
-  if (typeof document === 'undefined') return cookies;
+  if (typeof document === 'undefined') return {};
 
-  const pairs = document.cookie.split(';');
+  const currentCookieString = document.cookie;
+  if (currentCookieString === lastCookieString) {
+    return cachedCookies;
+  }
+
+  const cookies: Record<string, string> = {};
+  const pairs = currentCookieString.split(';');
   for (let i = 0; i < pairs.length; i++) {
     const pair = pairs[i].trim();
     if (!pair) continue;
@@ -60,6 +70,9 @@ const getCookiesMap = (): Record<string, string> => {
       cookies[key] = value;
     }
   }
+
+  lastCookieString = currentCookieString;
+  cachedCookies = cookies;
   return cookies;
 };
 

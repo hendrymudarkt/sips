@@ -9,6 +9,8 @@ import { useUploadPage } from '@/hooks/useUploadPage';
 import { useBatchSubmit } from '@/hooks/useBatchSubmit';
 import { formatPerfDate, formatPerfNumber } from '@/utils/helpers/perf-formatter';
 import { FilterBar } from '@/app/components/ui/filter-bar';
+import { ConfirmModal } from '@/app/components/ui/confirm-modal';
+import { UploadLayout } from '@/app/components/ui/upload-layout';
 
 interface HarvestingUploadData {
   spbno?: string;
@@ -129,6 +131,7 @@ export default function HarvestingUploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const fetchData = async (overrideParams?: HarvestingUploadParams) => {
     setLoading(true);
@@ -304,18 +307,16 @@ export default function HarvestingUploadPage() {
     [localeTag]
   );
 
-  const handleSubmitHarvesting = async () => {
+  const handleSubmitHarvesting = () => {
     if (data.length === 0) {
       setError('Tidak ada data untuk dikirim.');
       return;
     }
-    if (
-      !window.confirm(
-        `Yakin ingin mengirim ${data.length} record harvesting ke SIPS?\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`
-      )
-    )
-      return;
+    setConfirmOpen(true);
+  };
 
+  const handleConfirmHarvesting = async () => {
+    setConfirmOpen(false);
     setError(null);
     const { successCount, failMessages, successList } = await submit(data, {
       createPayloadItem,
@@ -342,11 +343,10 @@ export default function HarvestingUploadPage() {
   };
 
   if (initCheck && !isMgr && !isAdmin) return <AccessDenied />;
-  if (!initCheck) return <div className="min-h-screen bg-base-100 p-6" />;
+  if (!initCheck) return <UploadLayout />;
 
   return (
-    <div className="min-h-screen bg-base-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <UploadLayout>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -490,8 +490,15 @@ export default function HarvestingUploadPage() {
             noDataComponent={<div className="py-8 text-base-content/70">Tidak ada data.</div>}
           />
         )}
-      </div>
-    </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Konfirmasi"
+        message={`Yakin ingin mengirim ${data.length} record harvesting ke SIPS?\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`}
+        onConfirm={handleConfirmHarvesting}
+        onCancel={() => setConfirmOpen(false)}
+        loading={submitting}
+      />
+    </UploadLayout>
   );
 }
 

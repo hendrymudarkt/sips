@@ -8,12 +8,16 @@ import { buildMapUrl } from '@/utils/services/mapHelper';
 import { Icon, type IconName } from '@/app/components/ui/icons';
 import { useTranslations } from 'next-intl';
 import { isSafeHref } from '@/lib/utils/inputSanitizer';
+import { env } from '@/lib/env';
 
 type HarvestItem = {
   _rowKey?: string;
   _displayDate?: string;
   _outputNum?: number;
   _brondolNum?: number;
+  _outputPgknNum?: number;
+  _sisaPgknNum?: number;
+  _tinggalNum?: number;
 
   id: string;
   nodokumen: string;
@@ -51,6 +55,11 @@ type HarvestItem = {
   nama_karyawan_mandor_panen?: string | null;
   kode_karyawan_kerani?: string | null;
   nama_karyawan_kerani?: string | null;
+  status_pengangkutan?: string | null;
+  info_status_pengangkutan?: string | null;
+  sisa_pgkn?: string | null;
+  output_pgkn?: string | null;
+  tinggal?: string | null;
 };
 
 interface HarvestGalleryViewProps {
@@ -131,6 +140,16 @@ const HarvestCard = memo(function HarvestCard({
           ? 'badge-error'
           : 'badge-ghost';
 
+  const pengangkutanColor =
+    (item.status_pengangkutan || '').toLowerCase() === 'selisih'
+      ? 'badge-warning'
+      : (item.status_pengangkutan || '').toLowerCase() === 'terangkut'
+        ? 'badge-success'
+        : (item.status_pengangkutan || '').toLowerCase() === 'belum'
+          ? 'badge-error'
+          : 'badge-ghost';
+  const pengangkutanText = item.info_status_pengangkutan || item.status_pengangkutan || '-';
+
   const dateOnly = item._displayDate || (item.tanggal || '').split(' ')[0];
 
   return (
@@ -176,10 +195,24 @@ const HarvestCard = memo(function HarvestCard({
               <span className={`badge badge-xs ${statusColor}`}>
                 {item.status_harvesting || '-'}
               </span>
+              {(item.info_status_pengangkutan || item.status_pengangkutan) && (
+                <span className={`badge badge-xs ${pengangkutanColor}`} title={pengangkutanText}>
+                  {pengangkutanText || '-'}
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-2 mt-1 text-xs text-base-content/70">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1 text-xs text-base-content/70">
               <span>
                 Output: <strong>{item.output || '-'}</strong>
+              </span>
+              <span>
+                Tinggal: <strong>{item._tinggalNum != null ? item._tinggalNum : '-'}</strong>
+              </span>
+              <span>
+                Terangkut: <strong>{item._outputPgknNum != null ? item._outputPgknNum : '-'}</strong>
+              </span>
+              <span>
+                Sisa: <strong>{item._sisaPgknNum != null ? item._sisaPgknNum : '-'}</strong>
               </span>
               <span>
                 Brondol: <strong>{item.brondol || '-'}</strong>
@@ -222,12 +255,33 @@ const HarvestCard = memo(function HarvestCard({
             <ItemRow label={t('colBrondol')} value={item.brondol} />
             <ItemRow label={t('colAlBrondol')} value={item.alasbrondol} />
             <ItemRow label={t('colTPanjang')} value={item.tangkaipanjang} />
-            <ItemRow
-              label={t('colLokasi')}
-              value={item.location ? t('gpsDefaultLabel') : '-'}
-              href={item.location ? buildMapUrl(item.location) : undefined}
-              icon="globe"
-            />
+            <div className="flex justify-between gap-2 text-sm py-1 border-b border-base-200 last:border-0">
+              <span className="text-base-content/60 shrink-0">{t('colLokasi')}</span>
+              <span className="text-right font-medium break-all flex items-center gap-1 justify-end">
+                {item.location ? (
+                  <>
+                    <a
+                      href={buildMapUrl(item.location)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link link-primary text-xs flex items-center gap-1"
+                    >
+                      <Icon name="globe" className="h-4 w-4 inline" />
+                      GMaps
+                    </a>
+                    <a
+                      href={`${env.NEXT_PUBLIC_GIS_URL}?${new URLSearchParams({ dateFrom: (item.tanggal || '').split(' ')[0], dateTo: (item.tanggal || '').split(' ')[0], nodokumen: item.nodokumen || '' }).toString()}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link link-info text-xs flex items-center gap-1"
+                    >
+                      <Icon name="globe" className="h-4 w-4 inline" />
+                      Geo
+                    </a>
+                  </>
+                ) : '-'}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-x-3">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { SearchSelect, type Option } from '@/app/components/ui/search-select';
+import { FormModal } from '@/app/components/ui/form-modal';
 import type { FormState } from '@/types/domain';
 import { buildMapUrl } from '@/utils/services/mapHelper';
 import { isSafeHref } from '@/lib/utils/inputSanitizer';
@@ -54,88 +55,35 @@ interface AttendanceFormModalProps {
   t: (key: string) => string;
 }
 
-export default function AttendanceFormModal({
-  open,
-  isEditing,
-  detailLoading,
-  form,
-  setForm,
-  preview,
-  imgRef,
-  pdfRef,
-  mutation,
-  handleSubmit,
-  setOpen,
-  onChangeImage,
-  disableUnlessAllowed,
-  destOptions,
-  destFcba,
-  destSection,
-  isLoadingBU,
-  isLoadingDestSections,
-  destSectionOptions,
-  userLevel,
-  selFcba,
-  setSelFcba,
-  setSelSection,
-  setSelGang,
-  homeFcba,
-  homeSection,
-  fcbaOptions,
-  sectionOptions,
-  selSection,
-  gangOptions,
-  selGang,
-  mandorOptions,
-  selectedMandorGang,
-  employeeOptions,
-  onChangeSection,
-  onChangeGang,
-  onChangeEmployee,
-  onChangeMandor,
-  onChangeDestFcba,
-  onChangeDestSection,
-  isLoadingSections,
-  isLoadingGangs,
-  isLoadingSmp,
-  t,
-}: AttendanceFormModalProps) {
+export default function AttendanceFormModal(props: AttendanceFormModalProps) {
   const [fileError, setFileError] = useState('');
-  useEffect(() => { if (open) setFileError(''); }, [open]);
-  if (!open) return null;
+  useEffect(() => { if (props.open) setFileError(''); }, [props.open]);
+
+  const {
+    open, isEditing, detailLoading, form, setForm, preview, imgRef, pdfRef,
+    mutation, handleSubmit, setOpen, onChangeImage, disableUnlessAllowed,
+    destOptions, destFcba, destSection, isLoadingBU, isLoadingDestSections,
+    destSectionOptions, userLevel, selFcba, setSelFcba, setSelSection, setSelGang,
+    homeFcba, homeSection, fcbaOptions, sectionOptions, selSection, gangOptions,
+    selGang, mandorOptions, selectedMandorGang, employeeOptions, onChangeSection,
+    onChangeGang, onChangeEmployee, onChangeMandor, onChangeDestFcba,
+    onChangeDestSection, isLoadingSections, isLoadingGangs, isLoadingSmp, t,
+  } = props;
 
   return (
-    <div className="modal modal-open" role="dialog" aria-modal="true" aria-label={isEditing ? t('modalEditTitle') : t('modalAddTitle')}>
-      <div className="modal-box max-w-[calc(100vw-1rem)] sm:max-w-5xl mx-2 sm:mx-0 p-2 sm:p-6">
-        <div className="sticky top-0 z-10 bg-base-100 pb-2 -mx-2 sm:-mx-6 px-2 sm:px-6 border-b border-base-300">
-          <div className="flex items-start justify-between">
-            <h3 className="font-bold text-xl">
-              {isEditing ? t('modalEditTitle') : t('modalAddTitle')}
-            </h3>
-            <button
-              type="button"
-              className="btn btn-sm btn-circle btn-ghost"
-              onClick={() => setOpen(false)}
-              aria-label={t('close')}
-              title={t('close')}
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-        {detailLoading && (
-          <div className="absolute inset-0 bg-base-100/70 backdrop-blur-sm flex items-center justify-center rounded-2xl z-10">
-            <div className="flex items-center gap-3">
-              <span className="loading loading-spinner loading-lg" />
-              <span>{t('modalLoadingDetail')}</span>
-            </div>
-          </div>
-        )}
-        <form
-          id="attendance-form"
-          onSubmit={handleSubmit}
-          className="grid grid-cols-12 gap-2 max-h-[80vh] overflow-y-auto"
-        >
+    <FormModal
+      open={open}
+      title={isEditing ? t('modalEditTitle') : t('modalAddTitle')}
+      onClose={() => setOpen(false)}
+      onSubmit={handleSubmit}
+      loading={detailLoading || mutation.isPending}
+      loadingText={t('modalLoadingDetail')}
+      cancelText={t('modalCancel')}
+      confirmText={isEditing ? t('modalUpdate') : t('modalSave')}
+      formId="attendance-form"
+      size="lg"
+    >
+      <div className="grid grid-cols-12 gap-2">
           <div className="col-span-12">
             <h4 className="text-sm font-semibold text-base-content/80">{t('formInfoTitle')}</h4>
             <div className="mt-1 border-t border-base-300" />
@@ -382,18 +330,7 @@ export default function AttendanceFormModal({
               </div>
             )}
           </div>
-        </form>
-        <div className="sticky bottom-0 z-10 bg-base-100 pt-2 -mx-2 sm:-mx-6 px-2 sm:px-6 border-t border-base-300">
-          <div className="flex flex-wrap gap-2 justify-end">
-            <button type="button" className="btn" onClick={() => setOpen(false)}>{t('modalCancel')}</button>
-            <button type="submit" form="attendance-form"
-              className={`btn btn-primary ${mutation.isPending ? 'btn-disabled' : ''}`}
-              disabled={mutation.isPending}>
-              {mutation.isPending ? <span className="loading loading-spinner" /> : isEditing ? t('modalUpdate') : t('modalSave')}
-            </button>
-          </div>
         </div>
-      </div>
-    </div>
+    </FormModal>
   );
 }

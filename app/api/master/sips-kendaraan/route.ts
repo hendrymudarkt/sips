@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL } from '@/utils/api/absensiProxy';
+import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { authHeaders, parseJsonSafe, isRecord } from '@/lib/api/apiProxy';
 
 export const dynamic = 'force-dynamic';
@@ -32,14 +32,19 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const cacheHeaders = {
+    // SECURITY: Use private cache for potentially sensitive scoped data (CWE-524)
+    'Cache-Control': 'private, max-age=600, stale-while-revalidate=1200',
+  };
+
   if (Array.isArray(data)) {
-    return NextResponse.json({ ok: true, data });
+    return NextResponse.json({ ok: true, data }, { headers: cacheHeaders });
   }
 
   if (isRecord(data) && Array.isArray(data.data)) {
-    return NextResponse.json({ ok: true, data: data.data as unknown[] });
+    return NextResponse.json({ ok: true, data: data.data as unknown[] }, { headers: cacheHeaders });
   }
 
-  return NextResponse.json({ ok: true, data: [] });
+  return NextResponse.json({ ok: true, data: [] }, { headers: cacheHeaders });
 }
 

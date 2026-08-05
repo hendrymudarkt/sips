@@ -36,7 +36,7 @@ export function StatusBadge({
 }: StatusBadgeProps) {
   const map = mapping ?? defaultMapping;
   const key = status ?? '';
-  const style = map[key] ?? defaultStyle;
+  const style = map[key.toLowerCase()] ?? defaultStyle;
   const sizeClass = sizeMap[size];
   return <span className={`badge badge-${style}${sizeClass ? ` ${sizeClass}` : ''}`}>{label ?? key}</span>;
 }

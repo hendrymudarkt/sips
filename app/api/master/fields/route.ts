@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { authHeaders, extractDataArray } from '@/lib/api/apiProxy';
 import { applyUserDataScope } from '@/utils/api/requestScope';
 
@@ -37,6 +37,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   const data = extractDataArray(await response.json());
-  return NextResponse.json({ ok: true, data });
+  return NextResponse.json(
+    { ok: true, data },
+    {
+      headers: {
+        // SECURITY: Use private cache for potentially sensitive scoped data (CWE-524)
+        'Cache-Control': 'private, max-age=600, stale-while-revalidate=1200',
+      },
+    }
+  );
 }
 

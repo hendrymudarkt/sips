@@ -18,6 +18,10 @@ import { QuickSearch } from '@/app/components/ui/quick-search';
 import { FilterBar } from '@/app/components/ui/filter-bar';
 import { NumberCell } from '@/app/components/ui/number-cell';
 import { LhmActionCell } from '@/app/components/ui/lhm-action-cell';
+import { SummaryCards } from '@/app/components/ui/summary-cards';
+import { PageLayout } from '@/app/components/ui/page-layout';
+import { ConfirmModal } from '@/app/components/ui/confirm-modal';
+import { Toolbar } from '@/app/components/ui/toolbar';
 
 /* =========================
    T Y P E S
@@ -197,6 +201,7 @@ export default function Open() {
   const [selectedRows, setSelectedRows] = useState<LhmData[]>([]);
   const [toggledClearRows, setToggledClearRows] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [filters, setFilters] = useState<Filters>(() => getEmptyFilters());
   const [appliedFilters, setAppliedFilters] = useState<Filters | null>(null);
@@ -500,15 +505,16 @@ export default function Open() {
   }, []);
 
   /* ===== Open (submit to upstream) ===== */
-  const handleOpen = async () => {
+  const handleOpen = () => {
     if (selectedRows.length === 0) {
       toast.error(t('toastSelectOpen'));
       return;
     }
+    setConfirmOpen(true);
+  };
 
-    const confirmed = confirm(t('modalConfirmOpen', { count: selectedRows.length }));
-    if (!confirmed) return;
-
+  const handleConfirmOpen = async () => {
+    setConfirmOpen(false);
     setSubmitting(true);
     try {
       // Map selected rows ke urutan dan tipe data sesuai backend
@@ -953,75 +959,31 @@ export default function Open() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-base-200 w-full">
-      <div className="p-4 sm:p-6 max-w-screen-2xl mx-auto w-full overflow-x-hidden space-y-4">
+    <PageLayout>
         {/* Header */}
-        <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-2 items-start animate-slideUp">
-          <h1
-            className="text-2xl sm:text-3xl font-bold min-w-0 truncate"
-            title={t('pageTitleOpenTooltip')}
+        <Toolbar
+          title={t('pageTitleOpen')}
+          titleTooltip={t('pageTitleOpenTooltip')}
+          actions={[
+            { key: 'filter', label: showFilters ? t('hideFilters') : t('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
+            { key: 'refresh', label: loading ? t('loading') : t('refresh'), icon: 'refresh', onClick: () => fetchData(appliedFilters ?? getScopedFilters(filters)), disabled: loading, loading, variant: 'outline' },
+          ]}
+        >
+          <AppTour steps={tourSteps} storageKey="tour-open-lhm" onStepChange={handleTourStepChange} btnClassName="join-item flex-1 sm:flex-none" />
+          <ExportButton onClick={handleExport} label={t('export')} />
+          <button
+            className="btn btn-primary btn-sm flex-1 sm:flex-none join-item"
+            onClick={handleOpen}
+            disabled={selectedRows.length === 0 || submitting}
+            data-tour="open-button"
           >
-            {t('pageTitleOpen')}
-          </h1>
-          <div
-            className="flex justify-start sm:justify-end flex-wrap w-full join"
-            data-tour="action-buttons"
-          >
-            <AppTour
-              steps={tourSteps}
-              storageKey="tour-open-lhm"
-              onStepChange={handleTourStepChange}
-              btnClassName="join-item flex-1 sm:flex-none"
-            />
-            <button
-              className="btn btn-outline btn-sm flex-1 sm:flex-none join-item"
-              onClick={() => setShowFilters(s => !s)}
-              title={t('filterToggleTooltip')}
-              data-tour="filter-button"
-            >
-              <Icon name="filter" className="h-4 w-4" />
-              <span className="hidden sm:inline">{showFilters ? t('hideFilters') : t('showFilters')}</span>
-            </button>
-            <button
-              className={`btn btn-outline btn-sm flex-1 sm:flex-none join-item ${loading ? 'btn-disabled' : ''}`}
-              onClick={() => fetchData(appliedFilters ?? getScopedFilters(filters))}
-              disabled={loading}
-              title={t('refreshTooltip')}
-            >
-              {loading ? (
-                <>
-                  <span className="loading loading-spinner loading-xs" />
-                  <span className="hidden sm:inline">{t('loading')}</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="refresh" className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('refresh')}</span>
-                </>
-              )}
-            </button>
-            <ExportButton onClick={handleExport} label={t('export')} />
-            <button
-              className={`btn btn-primary btn-sm flex-1 sm:flex-none join-item ${submitting ? 'btn-disabled' : ''}`}
-              onClick={handleOpen}
-              disabled={selectedRows.length === 0 || submitting}
-              title="Open data LHM yang dipilih"
-              data-tour="open-button"
-            >
-              {submitting ? (
-                <>
-                  <span className="loading loading-spinner loading-xs" />
-                  <span className="hidden sm:inline">Opening...</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="eye-view" className="h-4 w-4" />
-                  <span className="hidden sm:inline">{`Open (${selectedRows.length})`}</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+            {submitting ? (
+              <><span className="loading loading-spinner loading-xs" /><span className="hidden sm:inline">Opening...</span></>
+            ) : (
+              <><Icon name="eye-view" className="h-4 w-4" /><span className="hidden sm:inline">{`Open (${selectedRows.length})`}</span></>
+            )}
+          </button>
+        </Toolbar>
 
         {/* Selected info */}
         {selectedRows.length > 0 && (
@@ -1046,18 +1008,8 @@ export default function Open() {
         {/* Quick Search + Total Cards */}
         <div className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 animate-slideUp [animation-delay:100ms]">
           {/* Total Cards */}
-          <div className="flex gap-2 overflow-x-auto flex-1 min-w-0" data-tour="total-cards">
-            {totalCards.map(card => (
-              <div
-                key={card.label}
-                className="bg-base-100 border border-base-200 rounded-lg px-3 py-2 shadow-sm whitespace-nowrap shrink-0"
-              >
-                <div className="text-[10px] opacity-70 leading-none">{card.label}</div>
-                <div className={`text-sm font-semibold ${card.className}`}>
-                  {formatPerfNumber(String(card.value), localeTag)}
-                </div>
-              </div>
-            ))}
+          <div data-tour="total-cards" className="flex-1 min-w-0">
+            <SummaryCards cards={totalCards.map(c => ({ ...c, value: formatPerfNumber(String(c.value), localeTag) }))} />
           </div>
           <QuickSearch
             value={q}
@@ -1125,8 +1077,15 @@ export default function Open() {
           namespace="Lhm"
           onClearSearch={q ? () => setQ('') : undefined}
         />
-      </div>
-    </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Konfirmasi"
+        message={t('modalConfirmOpen', { count: selectedRows.length })}
+        onConfirm={handleConfirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        loading={submitting}
+      />
+    </PageLayout>
   );
 }
 

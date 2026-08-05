@@ -102,4 +102,22 @@ describe('cookieStore', () => {
     cookieStore.setCookie('new_cookie', 'new_value', 1);
     expect(cookieStore.getCookie('new_cookie')).toBe('new_value');
   });
+
+  it('should optimize cookie parsing by caching results of unchanged document.cookie', () => {
+    document.cookie = 'user_level=adm;path=/';
+    const firstLevel = cookieStore.getLevel();
+    expect(firstLevel).toBe('ADM');
+
+    // Modifying a different unrelated key to ensure we don't return stale when cookie actually changes
+    document.cookie = 'user_fullname=Alice;path=/';
+    const secondLevel = cookieStore.getLevel();
+    const secondName = cookieStore.getFullName();
+    expect(secondLevel).toBe('ADM');
+    expect(secondName).toBe('Alice');
+
+    // Modifying user_level, verifying cache invalidates and reflects the new value
+    document.cookie = 'user_level=mgr;path=/';
+    const thirdLevel = cookieStore.getLevel();
+    expect(thirdLevel).toBe('MGR');
+  });
 });

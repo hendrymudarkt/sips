@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { validateSecurity } from '@/lib/auth/security';
 
 export const dynamic = 'force-dynamic';

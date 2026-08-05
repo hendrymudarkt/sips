@@ -10,6 +10,8 @@ import { StatusBadge } from '@/app/components/ui/status-badge';
 import { QuickSearch } from '@/app/components/ui/quick-search';
 import { FilterBar } from '@/app/components/ui/filter-bar';
 import { FormModal } from '@/app/components/ui/form-modal';
+import { SummaryCards } from '@/app/components/ui/summary-cards';
+import { PageLayout } from '@/app/components/ui/page-layout';
 import { Toolbar } from '@/app/components/ui/toolbar';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
@@ -33,7 +35,7 @@ export default function PengangkutanPage() {
   const {
     q, setQ,
     showFilters, setShowFilters,
-    filters, setFilters,
+    filters, setFilters, setAppliedFilters,
     items, filtered, loading, isFetching,
     totalCards,
     canModify,
@@ -229,12 +231,16 @@ export default function PengangkutanPage() {
         name: <span title={t('colKendaraanTooltip')}>{t('colKendaraan')}</span>,
         sortable: true,
         width: '200px',
-        cell: r => (
-          <div>
-            <div className="font-bold">{r.nama_kendaraan || r.kode_kendaraan || '-'}</div>
-            {r.registrationno && <div className="text-xs text-gray-500">{r.registrationno}</div>}
-          </div>
-        ),
+        cell: r => {
+          const kode = r.kode_kendaraan || '-';
+          const nama = r.nama_kendaraan || '';
+          return (
+            <div>
+              <div className="font-bold">{nama ? `${kode} - ${nama}` : kode}</div>
+              {r.registrationno && <div className="text-xs text-gray-500">{r.registrationno}</div>}
+            </div>
+          );
+        },
       },
       {
         name: <span title={t('colFcbaTooltip')}>{t('colFcba')}</span>,
@@ -393,8 +399,7 @@ export default function PengangkutanPage() {
   );
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-base-200 w-full">
-      <div className="p-4 sm:p-6 max-w-screen-2xl mx-auto w-full overflow-x-hidden space-y-4">
+    <PageLayout>
         <Toolbar
           title={t('pageTitle')}
           titleTooltip={t('pageTitleTooltip')}
@@ -435,21 +440,9 @@ export default function PengangkutanPage() {
 
         <div className="mb-3 flex flex-col md:flex-row items-center gap-4 animate-slideUp [animation-delay:100ms]">
           {/* TOTAL CARDS (di kiri) */}
-          <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-            {totalCards.map(card => (
-              <div
-                key={card.label}
-                className="bg-base-100 border border-base-200 rounded-lg px-3 py-2 shadow-sm whitespace-nowrap"
-              >
-                <div className="text-[10px] opacity-70 leading-none">{card.label}</div>
-                <div className={`text-sm font-semibold ${card.className}`}>
-                  {formatTotal(card.value, localeTag)}
-                </div>
-              </div>
-            ))}
-          </div>
+          <SummaryCards cards={totalCards.map(c => ({ ...c, value: formatTotal(c.value, localeTag) }))} />
 
-          <QuickSearch value={q} onChange={setQ} placeholder={t('searchPlaceholder')} className="w-full sm:w-72 sm:shrink-0" />
+          <QuickSearch value={q} onChange={setQ} placeholder={t('searchPlaceholder')} className="w-full sm:w-72 sm:shrink-0 sm:ml-auto" />
         </div>
 
         {showFilters && (
@@ -464,6 +457,9 @@ export default function PengangkutanPage() {
               { key: 'kode_karyawan_kerani', label: t('filterKerani'), type: 'text', placeholder: t('filterKerani') },
               { key: 'fcba', label: t('filterFcba'), type: 'text', placeholder: t('filterFcba'), disabled: isFcbaLocked },
               { key: 'afdeling', label: t('filterAfdeling'), type: 'text', placeholder: t('filterAfdeling'), disabled: isAfdelingLocked },
+              { key: 'fieldcode', label: t('filterFieldcode'), type: 'text', placeholder: t('filterFieldcode') },
+              { key: 'tph', label: t('filterTph'), type: 'text', placeholder: t('filterTph') },
+              { key: 'kode_kendaraan', label: t('filterKendaraan'), type: 'text', placeholder: t('filterKendaraan') },
               { key: 'kemandoran', label: t('filterKemandoran'), type: 'text', placeholder: t('filterKemandoran'), disabled: isKemandoranLocked },
               { key: 'status_pengangkutan', label: t('filterStatus'), type: 'select', options: [
                 { value: '', label: t('filterStatus') },
@@ -474,17 +470,18 @@ export default function PengangkutanPage() {
             ]}
             values={filters}
             onChange={(key, value) => setFilters(s => ({ ...s, [key]: value }))}
-            onApply={() => queryClient.invalidateQueries({ queryKey: QueryKeys.TRANSPORT() })}
+            onApply={() => setAppliedFilters({ ...filters })}
             onReset={() => {
               const reset = {
                 tanggal: '', tanggal_end: '', nopengangkutan: '', nospb: '', nodokumen: '',
                 kode_karyawan_kerani: '', kode_karyawan_driver: '', fcba: '', afdeling: '',
-                kemandoran: '', status_pengangkutan: '',
+                kemandoran: '', fieldcode: '', tph: '', kode_kendaraan: '', status_pengangkutan: '',
               };
               if (isFcbaLocked && homeFcba) reset.fcba = homeFcba;
               if (isAfdelingLocked && homeSection) reset.afdeling = homeSection;
               if (isKemandoranLocked && homeGang) reset.kemandoran = homeGang;
               setFilters(reset);
+              setAppliedFilters(reset);
             }}
             loading={loading}
             t={t}
@@ -966,10 +963,7 @@ export default function PengangkutanPage() {
           confirmText={t('modalDelete')}
           cancelText={t('modalCancel')}
         />
-      </div>
-    </div>
+    </PageLayout>
   );
 }
-
-
 

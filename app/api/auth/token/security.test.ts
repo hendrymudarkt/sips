@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateSecurity } from '@/lib/auth/security';
 vi.stubGlobal('fetch', vi.fn());
 vi.mock('@/lib/auth/security', () => ({  validateSecurity: vi.fn(),}));
-vi.mock('@/utils/api/absensiProxy', () => ({  BACKEND_URL: 'http://trusted-backend.com',  getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),}));
+vi.mock('@/utils/api/upstreamProxy', () => ({  BACKEND_URL: 'http://trusted-backend.com',  getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),}));
 vi.mock('next/headers', () => ({  cookies: vi.fn(),}));
 vi.mock('@/lib/constants', () => ({  UserLevel: { ADMIN: 'ADMIN' },}));
 describe('Token API Security', () => {
@@ -14,7 +14,7 @@ describe('Token API Security', () => {
   it('should return security error if validateSecurity fails', async () => {    const errorResponse = new Response(JSON.stringify({ ok: false, error: 'Security fail' }), {      status: 403,    }) as unknown as NextResponse;
     vi.mocked(validateSecurity).mockResolvedValue(errorResponse);    const req = new NextRequest('http://localhost/api/auth/token');    const res = await GET(req);    expect(res.status).toBe(403);    const data = await res.json();    expect(data.error).toBe('Security fail');  });
   it('should return 401 if no token', async () => {
-  vi.mocked(validateSecurity).mockResolvedValue(null);    const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+  vi.mocked(validateSecurity).mockResolvedValue(null);    const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
     vi.mocked(getTokenFromCookie).mockResolvedValue(undefined);    const req = new NextRequest('http://localhost/api/auth/token');    const res = await GET(req);    expect(res.status).toBe(401);    const data = await res.json();    expect(data.message).toBe('No token');  });
   it('should return 400 if user ID cookie is missing', async () => {
   vi.mocked(validateSecurity).mockResolvedValue(null);    const { cookies } = await import('next/headers');

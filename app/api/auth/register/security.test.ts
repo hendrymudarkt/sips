@@ -28,7 +28,7 @@ vi.mock('@/lib/auth/csrf', () => ({
 vi.mock('next/headers', () => ({
   cookies: vi.fn(),}));
 
-vi.mock('@/utils/api/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://trusted-backend.com',  getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),  safeJson: vi.fn((res) => res.json()),}));
 describe('Register API Security', () => {
   beforeEach(() => {

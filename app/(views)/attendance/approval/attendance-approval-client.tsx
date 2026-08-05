@@ -11,6 +11,7 @@ import { EmployeeNameCell } from '@/app/components/ui/employee-name-cell';
 import { PhotoCell } from '@/app/components/ui/photo-cell';
 import { QuickSearch } from '@/app/components/ui/quick-search';
 import { StatusBadge } from '@/app/components/ui/status-badge';
+import { PageLayout } from '@/app/components/ui/page-layout';
 import { extractArrayData } from '@/utils/api/apiHelpers';
 import { QueryKeys } from '@/utils/queryKeys';
 
@@ -372,7 +373,7 @@ export default function AttendanceApproval() {
         selector: r => r.attendance_type,
         sortable: true,
         width: '130px',
-        cell: r => <StatusBadge status={r.attendance_type} />,
+        cell: r => <StatusBadge status={r.attendance_type} mapping={{ REGULAR: 'outline', ASSISTENSI: 'info' }} />,
       },
       {
         name: <span title={t('colAttdTooltip')}>{t('colAttd')}</span>,
@@ -520,8 +521,7 @@ export default function AttendanceApproval() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-base-200 w-full">
-      <div className="p-4 sm:p-6 max-w-screen-2xl mx-auto w-full overflow-x-hidden">
+    <PageLayout>
         {/* Toast */}
         <div className="toast toast-top right-4 z-50">
           {alert && (
@@ -589,8 +589,7 @@ export default function AttendanceApproval() {
             <div className="py-8 text-base-content/70">{t('noDataPending')}</div>
           }
         />
-      </div>
-    </div>
+    </PageLayout>
   );
 }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { UserLevel } from '@/lib/constants';
 import { validateSecurity } from '@/lib/auth/security';
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       const text = await response.text();
       const details = text.length > 1200 ? text.substring(0, 1200) + '...' : text;
-      console.error('❌ Laravel error response:', details);
+      console.error('âŒ Laravel error response:', details);
       return NextResponse.json(
         {
           success: false,
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data);
   } catch (err: unknown) {
     const error = err instanceof Error ? err : new Error(String(err));
-    console.error('❌ Proxy crash:', error.message, error.stack);
+    console.error('âŒ Proxy crash:', error.message, error.stack);
     return NextResponse.json({ success: false, message: 'Proxy error occurred' }, { status: 500 });
   }
 }

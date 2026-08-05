@@ -9,6 +9,8 @@ import { formatPerfDate, formatPerfNumber } from '@/utils/helpers/perf-formatter
 import { useUploadPage } from '@/hooks/useUploadPage';
 import { useBatchSubmit } from '@/hooks/useBatchSubmit';
 import { FilterBar } from '@/app/components/ui/filter-bar';
+import { ConfirmModal } from '@/app/components/ui/confirm-modal';
+import { UploadLayout } from '@/app/components/ui/upload-layout';
 
 interface HarvestQualityUploadData {
   empcode: string;
@@ -136,6 +138,7 @@ export default function HarvestQualityUploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const fetchData = async (overrideParams?: HarvestQualityUploadParams) => {
     setLoading(true);
@@ -385,18 +388,16 @@ export default function HarvestQualityUploadPage() {
     [localeTag]
   );
 
-  const handleSubmitHarvestQuality = async () => {
+  const handleSubmitHarvestQuality = () => {
     if (data.length === 0) {
       setError('Tidak ada data untuk dikirim.');
       return;
     }
-    if (
-      !window.confirm(
-        `Yakin ingin mengirim ${data.length} record harvesting quality ke SIPS?\n\nTotal Under Ripe: ${summary.totalUnderripe}\nTotal Overripe: ${summary.totalOverripe}\nTotal Abnormal: ${summary.totalAbnormal}`
-      )
-    )
-      return;
+    setConfirmOpen(true);
+  };
 
+  const handleConfirmHarvestQuality = async () => {
+    setConfirmOpen(false);
     setError(null);
     const { successCount, failMessages, successList } = await submit(data, {
       createPayloadItem,
@@ -423,11 +424,10 @@ export default function HarvestQualityUploadPage() {
   };
 
   if (initCheck && !isMgr && !isAdmin) return <AccessDenied />;
-  if (!initCheck) return <div className="min-h-screen bg-base-100 p-6" />;
+  if (!initCheck) return <UploadLayout />;
 
   return (
-    <div className="min-h-screen bg-base-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <UploadLayout>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -568,8 +568,15 @@ export default function HarvestQualityUploadPage() {
             noDataComponent={<div className="py-8 text-base-content/70">Tidak ada data.</div>}
           />
         )}
-      </div>
-    </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Konfirmasi"
+        message={`Yakin ingin mengirim ${data.length} record harvesting quality ke SIPS?\n\nTotal Under Ripe: ${summary.totalUnderripe}\nTotal Overripe: ${summary.totalOverripe}\nTotal Abnormal: ${summary.totalAbnormal}`}
+        onConfirm={handleConfirmHarvestQuality}
+        onCancel={() => setConfirmOpen(false)}
+        loading={submitting}
+      />
+    </UploadLayout>
   );
 }
 

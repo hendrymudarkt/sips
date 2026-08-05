@@ -12,7 +12,7 @@ vi.mock('@/lib/auth/security', () => ({
   validateSecurity: vi.fn(),
 }));
 
-vi.mock('@/utils/api/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   ABSENSI_BASE: 'http://trusted-backend.com/api/attendance',
   getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),
 }));
@@ -37,7 +37,7 @@ describe('Attendance ID API Security', () => {beforeEach(() => {vi.clearAllMocks
   const context = { params: Promise.resolve({ id: '123' }) };
 
   describe('GET handler', () => {it('should return 401 if no token', async () => {
-      const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+      const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
 
@@ -77,7 +77,7 @@ describe('Attendance ID API Security', () => {beforeEach(() => {vi.clearAllMocks
     });
 
     it('should return 401 if no token', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
-      const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+      const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
 
@@ -102,7 +102,7 @@ describe('Attendance ID API Security', () => {beforeEach(() => {vi.clearAllMocks
     });
 
     it('should return 401 if no token', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
-      const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+      const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
 
@@ -127,7 +127,7 @@ describe('Attendance ID API Security', () => {beforeEach(() => {vi.clearAllMocks
     });
 
     it('should return 401 if no token', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
-      const { getTokenFromCookie } = await import('@/utils/api/absensiProxy');
+      const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
 
       vi.mocked(getTokenFromCookie).mockResolvedValue(null);
 

@@ -28,6 +28,7 @@ import { EmployeeNameCell } from '@/app/components/ui/employee-name-cell';
 import { FilterBar, type FilterField } from '@/app/components/ui/filter-bar';
 import { QuickSearch } from '@/app/components/ui/quick-search';
 import { StatusBadge } from '@/app/components/ui/status-badge';
+import { PageLayout } from '@/app/components/ui/page-layout';
 
 /* =========================
    T Y P E S
@@ -359,7 +360,7 @@ export default function Attendance() {
     },
   ], [t]);
 
-  const [filters, setFilters] = useState<Filters>(() => {
+  const getInitialFilters = (): Filters => {
     const yesterday = getYesterdayISO();
     const today = getTodayISO();
     return {
@@ -377,7 +378,10 @@ export default function Attendance() {
       fcba_destination: '',
       section_destination: '',
     };
-  });
+  };
+
+  const [filters, setFilters] = useState<Filters>(getInitialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<Filters>(getInitialFilters);
 
   // Read tanggal/tanggal_end from URL params (from dashboard navigation)
   useEffect(() => {
@@ -386,6 +390,11 @@ export default function Attendance() {
     const tanggal_end = params.get('tanggal_end');
     if (tanggal || tanggal_end) {
       setFilters(prev => ({
+        ...prev,
+        ...(tanggal ? { tanggal } : {}),
+        ...(tanggal_end ? { tanggal_end } : {}),
+      }));
+      setAppliedFilters(prev => ({
         ...prev,
         ...(tanggal ? { tanggal } : {}),
         ...(tanggal_end ? { tanggal_end } : {}),
@@ -459,9 +468,9 @@ export default function Attendance() {
     isFetching,
     error: queryError,
   } = useQuery({
-    queryKey: ['attendance', filters, userLevel, homeFcba, homeSection, homeKemandoran],
+    queryKey: ['attendance', appliedFilters, userLevel, homeFcba, homeSection, homeKemandoran],
     queryFn: async () => {
-      const base = filters;
+      const base = appliedFilters;
       let start = (base.tanggal ?? '').trim();
       let end = (base.tanggal_end ?? '').trim();
 
@@ -1273,7 +1282,7 @@ export default function Attendance() {
     setForm({
       ...initialForm,
       tanggal: today,
-      time_in: '06:00',
+      time_in: '07:00',
       time_out: '14:00',
       id_device: `${getReadableDevice()} • ${deviceId}`,
       mac_address: pseudoMac,
@@ -1311,7 +1320,7 @@ export default function Attendance() {
     const dIn = combineToDate(s.tanggal, s.time_in);
     const dOut = combineToDate(s.tanggal, s.time_out);
 
-    const baseIn = s.tanggal ? new Date(`${s.tanggal}T06:00`) : null;
+    const baseIn = s.tanggal ? new Date(`${s.tanggal}T07:00`) : null;
     const baseOut = s.tanggal ? new Date(`${s.tanggal}T14:00`) : null;
 
     let totalLate = s.total_late_time;
@@ -1341,7 +1350,7 @@ export default function Attendance() {
 
     let mandays = '0';
     if (s.attendance === 'KJ' || s.attendance === 'WH' || s.attendance === 'WS') {
-      mandays = fullHK ? '1' : (effectiveMin / 480).toFixed(4);
+      mandays = fullHK ? '1' : (effectiveMin / 420).toFixed(4);
     } else {
       mandays = '0';
     }
@@ -1513,7 +1522,7 @@ export default function Attendance() {
           kemandoran: d.kemandoran || '',
           kode_karyawan_mandor: d.kode_karyawan_mandor || '',
           kode_karyawan: d.kode_karyawan || '',
-          time_in: toHM(d.time_in) || '06:00',
+          time_in: toHM(d.time_in) || '07:00',
           time_out: toHM(d.time_out) || '14:00',
           location_in: d.location_in || '',
           location_out: d.location_out || '',
@@ -1864,8 +1873,8 @@ export default function Attendance() {
       const kName = it.namakaryawan || '';
       const karyawanLabel = kName ? `${kCode} - ${kName}` : kCode;
 
-      const tIn = it.time_in ? it.time_in.split(' ')[1]?.slice(0, 5) || it.time_in : '-';
-      const tOut = it.time_out ? it.time_out.split(' ')[1]?.slice(0, 5) || it.time_out : '-';
+      const tIn = it.time_in ? it.time_in.split(' ')[1]?.slice(0, 8) || it.time_in : '-';
+      const tOut = it.time_out ? it.time_out.split(' ')[1]?.slice(0, 8) || it.time_out : '-';
 
       const searchContent = `${it.kemandoran || ''} ${kName} ${kCode} ${mCode} ${mandorLabel} ${it.fcba || ''} ${it.fcba_destination || ''} ${it.section_destination || ''} ${it.section || ''} ${it.gang || ''} ${it.attendance_type || ''} ${it.attendance || ''} ${it.no_ba_exca || ''} ${it.id_device || ''} ${it.mac_address || ''} ${it.location_in || ''} ${it.location_out || ''} ${it.pengancakan || ''} ${it.mandays || ''} ${it._dateOnly || ''} ${displayDate}`
         .toLowerCase()
@@ -1950,12 +1959,13 @@ export default function Attendance() {
       fcba_destination: '',
       section_destination: '',
     };
-    setFilters(getScopedFilters(resetFilters));
+    const scoped = getScopedFilters(resetFilters);
+    setFilters(scoped);
+    setAppliedFilters(scoped);
   }, [getScopedFilters]);
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-base-200 w-full">
-      <div className="p-4 sm:p-6 max-w-screen-2xl mx-auto w-full overflow-x-hidden space-y-4">
+    <PageLayout>
         <Toolbar
           title={t('pageTitle')}
           titleTooltip={t('pageTitleTooltip')}
@@ -2034,7 +2044,7 @@ export default function Attendance() {
             fields={filterFields}
             values={filters}
             onChange={(key, value) => setFilters(s => ({ ...s, [key]: value }))}
-            onApply={() => queryClient.invalidateQueries({ queryKey: ['attendance'] })}
+            onApply={() => setAppliedFilters({ ...filters })}
             onReset={handleFilterReset}
             loading={loading}
             t={t}
@@ -2140,7 +2150,6 @@ export default function Attendance() {
             }}
           />
         )}
-      </div>
-    </div>
+    </PageLayout>
   );
 }

@@ -6,7 +6,7 @@ import type { Option } from '@/app/components/ui/search-select';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { cookieStore } from '@/utils/auth/cookieStore';
 import { getFilterCriteria, getLockedFields } from '@/utils/helpers/filterHelper';
-import { formatPerfDate } from '@/utils/helpers/perf-formatter';
+import { formatPerfDate, getCachedCollator } from '@/utils/helpers/perf-formatter';
 import { fetchBusinessUnits } from '@/utils/services/businessUnitService';
 import { fetchMasterUsers as fetchMasterUsersService, fetchTransportList } from '@/utils/services/transportService';
 import { extractArrayData } from '@/utils/api/apiHelpers';
@@ -85,7 +85,7 @@ export function useTransportData() {
   const queryClient = useQueryClient();
   const t = useTranslations('Transport');
 
-  const [filters, setFilters] = useState<TransportFilters>(() => {
+  const getInitialFilters = (): TransportFilters => {
     const yesterday = getYesterdayISO();
     const today = getTodayISO();
     return {
@@ -107,7 +107,10 @@ export function useTransportData() {
       kemandoran: '',
       flag: '',
     };
-  });
+  };
+
+  const [filters, setFilters] = useState<TransportFilters>(getInitialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<TransportFilters>(getInitialFilters);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -115,6 +118,11 @@ export function useTransportData() {
     const tanggal_end = params.get('tanggal_end');
     if (tanggal || tanggal_end) {
       setFilters(prev => ({
+        ...prev,
+        ...(tanggal ? { tanggal } : {}),
+        ...(tanggal_end ? { tanggal_end } : {}),
+      }));
+      setAppliedFilters(prev => ({
         ...prev,
         ...(tanggal ? { tanggal } : {}),
         ...(tanggal_end ? { tanggal_end } : {}),
@@ -238,14 +246,16 @@ export function useTransportData() {
   });
 
   const kendaraanOptionsAsOptions: Option[] = useMemo(
-    () =>
-      kendaraanData
+    () => {
+      const collator = getCachedCollator('id-ID');
+      return kendaraanData
         .filter(row => row.fccode)
         .map(row => ({
           value: String(row.fccode),
           label: `${String(row.fccode)} - ${String(row.fcname || '')}`,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) => collator.compare(a.label, b.label));
+    },
     [kendaraanData]
   );
 
@@ -819,6 +829,8 @@ export function useTransportData() {
       'Kendaraan Kode': r.kode_kendaraan || '-',
       'Kendaraan Nama': r.nama_kendaraan || '-',
       'Kendaraan Plat': r.registrationno || '-',
+      Blok: r.fieldcode || '-',
+      TPH: r.tph || '-',
       FCBA: r.fcba || '-',
       Pabrik: r.pabrik_tujuan || '-',
       Afdeling: r.afdeling || '-',
@@ -848,26 +860,26 @@ export function useTransportData() {
     isFetching,
     error: queryError,
   } = useQuery({
-    queryKey: [...QueryKeys.TRANSPORT(filters as Record<string, string>), userLevel, homeFcba, homeSection, homeGang],
+    queryKey: [...QueryKeys.TRANSPORT(appliedFilters as Record<string, string>), userLevel, homeFcba, homeSection, homeGang],
     queryFn: async () => {
       const p: Record<string, string> = {};
-      if (filters.tanggal) p.tanggal = filters.tanggal;
-      if (filters.tanggal_end) p.tanggal_end = filters.tanggal_end;
-      if (filters.nopengangkutan) p.nopengangkutan = filters.nopengangkutan;
-      if (filters.nospb) p.nospb = filters.nospb;
-      if (filters.nodokumen) p.nodokumen = filters.nodokumen;
-      if (filters.kode_karyawan_kerani) p.kode_karyawan_kerani = filters.kode_karyawan_kerani;
-      if (filters.kode_karyawan_driver) p.kode_karyawan_driver = filters.kode_karyawan_driver;
-      if (filters.type_pengangkutan) p.type_pengangkutan = filters.type_pengangkutan;
-      if (filters.kode_kendaraan) p.kode_kendaraan = filters.kode_kendaraan;
-      if (filters.fcba) p.fcba = filters.fcba;
-      if (filters.pabrik_tujuan) p.pabrik_tujuan = filters.pabrik_tujuan;
-      if (filters.afdeling) p.afdeling = filters.afdeling;
-      if (filters.tph) p.tph = filters.tph;
-      if (filters.fieldcode) p.fieldcode = filters.fieldcode;
-      if (filters.status_pengangkutan) p.status_pengangkutan = filters.status_pengangkutan;
-      if (filters.kemandoran) p.kemandoran = filters.kemandoran;
-      if (filters.flag) p.flag = filters.flag;
+      if (appliedFilters.tanggal) p.tanggal = appliedFilters.tanggal;
+      if (appliedFilters.tanggal_end) p.tanggal_end = appliedFilters.tanggal_end;
+      if (appliedFilters.nopengangkutan) p.nopengangkutan = appliedFilters.nopengangkutan;
+      if (appliedFilters.nospb) p.nospb = appliedFilters.nospb;
+      if (appliedFilters.nodokumen) p.nodokumen = appliedFilters.nodokumen;
+      if (appliedFilters.kode_karyawan_kerani) p.kode_karyawan_kerani = appliedFilters.kode_karyawan_kerani;
+      if (appliedFilters.kode_karyawan_driver) p.kode_karyawan_driver = appliedFilters.kode_karyawan_driver;
+      if (appliedFilters.type_pengangkutan) p.type_pengangkutan = appliedFilters.type_pengangkutan;
+      if (appliedFilters.kode_kendaraan) p.kode_kendaraan = appliedFilters.kode_kendaraan;
+      if (appliedFilters.fcba) p.fcba = appliedFilters.fcba;
+      if (appliedFilters.pabrik_tujuan) p.pabrik_tujuan = appliedFilters.pabrik_tujuan;
+      if (appliedFilters.afdeling) p.afdeling = appliedFilters.afdeling;
+      if (appliedFilters.tph) p.tph = appliedFilters.tph;
+      if (appliedFilters.fieldcode) p.fieldcode = appliedFilters.fieldcode;
+      if (appliedFilters.status_pengangkutan) p.status_pengangkutan = appliedFilters.status_pengangkutan;
+      if (appliedFilters.kemandoran) p.kemandoran = appliedFilters.kemandoran;
+      if (appliedFilters.flag) p.flag = appliedFilters.flag;
 
       const scope = getUserScope();
       const filterCriteria = getFilterCriteria(
@@ -1050,12 +1062,13 @@ export function useTransportData() {
 
   const tkbmOptions: Option[] = useMemo(() => {
     if (!tkbmAttendanceData.length) return [];
+    const collator = getCachedCollator('id-ID');
     return tkbmAttendanceData
       .map(e => ({
         value: e.fccode,
         label: e.fullname ? `${e.fccode} - ${e.fullname}` : e.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
   }, [tkbmAttendanceData]);
 
   const tkbmOptions2 = useMemo(
@@ -1086,26 +1099,30 @@ export function useTransportData() {
   );
 
   const keraniOptionsAsOptions: Option[] = useMemo(
-    () =>
-      keraniOptions
+    () => {
+      const collator = getCachedCollator('id-ID');
+      return keraniOptions
         .filter(k => k.idkaryawan)
         .map(k => ({
           value: String(k.idkaryawan),
           label: k.fullname ? `${k.idkaryawan} - ${k.fullname}` : String(k.idkaryawan),
         }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) => collator.compare(a.label, b.label));
+    },
     [keraniOptions]
   );
 
   const driverOptionsAsOptions: Option[] = useMemo(
-    () =>
-      driverOptions
+    () => {
+      const collator = getCachedCollator('id-ID');
+      return driverOptions
         .filter(d => d.fccode)
         .map(d => ({
           value: d.fccode,
           label: `${d.fccode} - ${d.fullname}`,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
+        .sort((a, b) => collator.compare(a.label, b.label));
+    },
     [driverOptions]
   );
 
@@ -1127,7 +1144,11 @@ export function useTransportData() {
     const t = {
       totaljanjang: 0,
       brondolan: 0,
+      totalSpb: 0,
+      totalDokumen: 0,
     };
+    const spbSet = new Set<string>();
+    const dokumenSet = new Set<string>();
 
     for (const it of enrichedItems) {
       if (!s || it._searchContent?.includes(s)) {
@@ -1135,8 +1156,13 @@ export function useTransportData() {
 
         t.totaljanjang += it._totaljanjangNum || 0;
         t.brondolan += it._brondolanNum || 0;
+        if (it.nospb) spbSet.add(it.nospb.trim());
+        if (it.nodokumen) dokumenSet.add(it.nodokumen.trim());
       }
     }
+
+    t.totalSpb = spbSet.size;
+    t.totalDokumen = dokumenSet.size;
 
     return { filtered: result, totals: t };
   }, [q, enrichedItems]);
@@ -1152,12 +1178,22 @@ export function useTransportData() {
       value: totals.brondolan,
       className: 'text-success',
     },
+    {
+      label: t('totalSpb'),
+      value: totals.totalSpb,
+      className: 'text-info',
+    },
+    {
+      label: t('totalDokumen'),
+      value: totals.totalDokumen,
+      className: 'text-secondary',
+    },
   ];
 
   return {
     q, setQ, isSearchFocused, setIsSearchFocused, searchInputRef,
     showFilters, setShowFilters,
-    filters, setFilters,
+    filters, setFilters, appliedFilters, setAppliedFilters,
     items, isLoading, isFetching, queryError,
     userLevel, canModify,
     open, setOpen, isEditing,

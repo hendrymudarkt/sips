@@ -28,15 +28,16 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
   const searchInputRef = useSearchShortcut();
   const [q, setQ] = useState(initialQ);
   const [filters, setFilters] = useState<UserFilters>(initialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<UserFilters>(initialFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [userLevel, setUserLevel] = useState('');
   const [userFcba, setUserFcba] = useState('');
 
   const effectiveFilters = useMemo<UserFilters>(() => {
-    if (!userLevel || userLevel === 'ADM' || !userFcba) return filters;
-    return { ...filters, fcba: userFcba };
-  }, [filters, userLevel, userFcba]);
+    if (!userLevel || userLevel === 'ADM' || !userFcba) return appliedFilters;
+    return { ...appliedFilters, fcba: userFcba };
+  }, [appliedFilters, userLevel, userFcba]);
 
   const formatFilterParams = useCallback((f: UserFilters): string => {
     const params = new URLSearchParams();
@@ -191,6 +192,9 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
 
   const [addOpen, setAddOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUser, setEditUser] = useState<SipsUser | null>(null);
+  const [editLoading, setEditLoading] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailUser, setDetailUser] = useState<SipsUser | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -272,6 +276,75 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     },
     [statusMutation]
   );
+
+  const handleEdit = useCallback(
+    async (id: number) => {
+      setEditLoading(true);
+      setEditOpen(true);
+      try {
+        const res = await fetch(`/api/master/user/${id}`, { credentials: 'include' });
+        const json: unknown = await res.json();
+        const d = extractSingleData<SipsUser>(json) || users.find(u => u.id === id) || null;
+        if (!res.ok || !d) throw new Error('Failed to load user data');
+        setEditUser(d);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Failed to load user data');
+        setEditOpen(false);
+      } finally {
+        setEditLoading(false);
+      }
+    },
+    [users]
+  );
+
+  const editMutation = useMutation({
+    mutationFn: async ({ id, data, photo }: { id: number; data: Record<string, string>; photo: File | null }) => {
+      const csrfToken = document.cookie.match(/csrf_token=([^;]+)/)?.[1];
+
+      const res = await fetch(`/api/master/user/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-Token': csrfToken || '',
+        },
+        body: JSON.stringify(data),
+      });
+      if (res.status === 401) {
+        await logoutAndRedirect();
+        throw new Error('Unauthorized');
+      }
+      const json: Record<string, unknown> = await res.json();
+      if (isUnauthenticatedJson(json)) {
+        await logoutAndRedirect();
+        throw new Error('Unauthorized');
+      }
+      if (!res.ok || !json.ok)
+        throw new Error(String(json.message ?? json.error ?? 'Failed to update user'));
+
+      if (photo) {
+        const fd = new FormData();
+        fd.append('photo', photo);
+        const photoRes = await fetch(`/api/master/user/${id}/photo`, {
+          method: 'POST',
+          credentials: 'include',
+          body: fd,
+        });
+        const photoJson: Record<string, unknown> = await photoRes.json();
+        if (!photoRes.ok || !photoJson.ok)
+          throw new Error(String(photoJson.message ?? 'Photo upload failed'));
+      }
+
+      return json;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QueryKeys.USERS() });
+      setEditOpen(false);
+      setEditUser(null);
+      toast.success(t('userUpdated'));
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -417,12 +490,15 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     }
   }, []);
 
-  const clearFilters = () => setFilters({});
+  const clearFilters = () => {
+    setFilters({});
+    setAppliedFilters({});
+  };
 
   return {
     q, setQ, isSearchFocused, setIsSearchFocused,
     searchInputRef, showFilters, setShowFilters,
-    filters, setFilters, clearFilters,
+    filters, setFilters, appliedFilters, setAppliedFilters, clearFilters,
     afdelingFilterOptions, gangcodeFilterOptions,
     scopedFcbaOptions, fcbaOptions,
     isFcbaRestricted, userFcba, userLevel,
@@ -435,6 +511,9 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     statusMutation, registerMutation, queryClient,
     addOpen, setAddOpen,
     bulkOpen, setBulkOpen,
+    editOpen, setEditOpen,
+    editUser, editLoading,
+    editMutation,
     detailOpen, setDetailOpen,
     detailUser, detailLoading,
     setBulkRows, bulkRows, bulkLoading,
@@ -444,7 +523,7 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     applyBulkDefaults,
     addBulkRow, removeBulkRow, updateBulkRow,
     handleBulkSubmit,
-    handleDetail, handleToggleStatus,
+    handleDetail, handleEdit, handleToggleStatus,
     handleAddUser, handleExport,
     resolveSection,
   };

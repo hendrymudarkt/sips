@@ -38,6 +38,21 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
   const highlightRef = useRef<HTMLElement | null>(null);
   const prevPositionRef = useRef<string | null>(null);
   const prevZIndexRef = useRef<string | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (isOpen) {
+      modalContainerRef.current?.focus();
+    } else {
+      triggerRef.current?.focus();
+    }
+  }, [isOpen]);
 
   /* ---- Persist dismissal in localStorage ---- */
   const persistDismiss = useCallback(() => {
@@ -157,10 +172,13 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
     <>
       {/* Help Button — dibuat mencolok dengan warna warning + animasi */}
       <button
+        ref={triggerRef}
         className={`btn btn-warning btn-sm gap-1.5 shadow-sm hover:shadow-md transition-all duration-200 ${btnClassName}`}
         onClick={handleOpen}
         title={t('helpHint')}
         aria-label={t('help')}
+        aria-expanded={isOpen}
+        aria-controls="tour-modal-container"
       >
         <Icon name="help" className="h-4 w-4" />
         <span className="hidden sm:inline">{t('help')}</span>
@@ -174,7 +192,10 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
 
           {/* Modal Card */}
           <div
-            className={`relative bg-base-100 rounded-2xl shadow-2xl ${modalWidth} mx-3 sm:mx-4`}
+            id="tour-modal-container"
+            ref={modalContainerRef}
+            tabIndex={-1}
+            className={`relative bg-base-100 rounded-2xl shadow-2xl ${modalWidth} mx-3 sm:mx-4 focus:outline-none`}
             style={{ animation: 'tourFadeIn 0.25s ease-out' }}
           >
             {/* Progress bar */}

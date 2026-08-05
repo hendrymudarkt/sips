@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { BACKEND_URL } from '@/utils/api/absensiProxy';
+import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { validateSecurity } from '@/lib/auth/security';
 
 export async function GET(req: NextRequest) {

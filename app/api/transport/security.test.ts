@@ -10,7 +10,7 @@ vi.mock('@/lib/security', () => ({
   validateSecurity: vi.fn(),
 }));
 
-vi.mock('@/utils/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   BACKEND_URL: 'http://trusted-backend.com',
   getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),
 }));

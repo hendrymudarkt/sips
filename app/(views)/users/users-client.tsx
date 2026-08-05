@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { TableColumn } from 'react-data-table-component';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,6 +12,9 @@ import { EmptyState } from '@/app/components/feedback/empty-state';
 import { Icon } from '@/app/components/ui/icons';
 import { PhotoCell } from '@/app/components/ui/photo-cell';
 import { ExportButton } from '@/app/components/ui/export-button';
+import { SectionHeader } from '@/app/components/ui/section-header';
+import { Toolbar } from '@/app/components/ui/toolbar';
+import { PageLayout } from '@/app/components/ui/page-layout';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
 import { useUsersData } from '@/hooks/useUsersData';
@@ -22,6 +25,7 @@ import { StatusBadge } from '@/app/components/ui/status-badge';
 import { QuickSearch } from '@/app/components/ui/quick-search';
 import { FilterBar } from '@/app/components/ui/filter-bar';
 import { FormModal } from '@/app/components/ui/form-modal';
+import { PhotoUpload } from '@/app/components/ui/photo-upload';
 
 const LEVEL_OPTIONS: Option[] = [
   { value: 'MGR', label: 'MGR - Manager' },
@@ -32,7 +36,6 @@ const LEVEL_OPTIONS: Option[] = [
   { value: 'KRP', label: 'KRP - Kerani Panen' },
   { value: 'KRT', label: 'KRT - Kerani Transport' },
   { value: 'KRA', label: 'KRA - Kerani Afdeling' },
-  { value: 'ADM', label: 'ADM - Administrator' },
 ];
 
 const POSITION_OPTIONS: Option[] = [
@@ -44,7 +47,6 @@ const POSITION_OPTIONS: Option[] = [
   { value: 'KR.PANEN', label: 'KR.PANEN - Kerani Panen' },
   { value: 'KR.TRANS', label: 'KR.TRANS - Kerani Transport' },
   { value: 'KR.AFDELING', label: 'KR.AFDELING - Kerani Afdeling' },
-  { value: 'ADMIN', label: 'ADMIN - Administrator' },
 ];
 
 const POSITION_TO_LEVEL: Record<string, string> = {
@@ -56,7 +58,6 @@ const POSITION_TO_LEVEL: Record<string, string> = {
   'KR.PANEN': 'KRP',
   'KR.TRANS': 'KRT',
   'KR.AFDELING': 'KRA',
-  'ADMIN': 'ADM',
 };
 
 const initialBulkRow: UserFormState = { ...initialUserForm, password: '12345678' };
@@ -81,12 +82,12 @@ export default function UsersClient() {
   const {
     q, setQ,
     showFilters, setShowFilters,
-    filters, setFilters, clearFilters,
+    filters, setFilters, setAppliedFilters, clearFilters,
     afdelingFilterOptions, gangcodeFilterOptions,
     scopedFcbaOptions,
     sectionOptions, gangOptions,
     bulkSectionOptions, bulkGangOptions,
-    isFcbaRestricted, userFcba, userLevel,
+    isFcbaRestricted, userFcba,
     isLoading, isFetching, filteredUsers,
     setSelFcba, setSelAfdeling,
     form, setForm,
@@ -97,26 +98,41 @@ export default function UsersClient() {
     bulkAfdeling, setBulkAfdeling,
     bulkGang, setBulkGang,
     setBulkRows, bulkRows, bulkLoading,
+    editOpen, setEditOpen,
+    editUser, editLoading,
+    editMutation,
     detailOpen, setDetailOpen,
     detailUser, detailLoading,
     onChangeFcba, onChangeAfdeling, onChangeGang,
     applyBulkDefaults,
     addBulkRow, removeBulkRow, updateBulkRow,
     handleBulkSubmit,
-    handleDetail, handleToggleStatus,
+    handleDetail, handleEdit, handleToggleStatus,
     handleAddUser, handleExport,
     resolveSection,
   } = useUsersData(initialQ, initialFilters);
 
-  const visibleLevelOptions = useMemo(
-    () => (userLevel === 'ADM' ? LEVEL_OPTIONS : LEVEL_OPTIONS.filter(o => o.value !== 'ADM')),
-    [userLevel]
-  );
+  const visibleLevelOptions = useMemo(() => LEVEL_OPTIONS, []);
 
-  const visiblePositionOptions = useMemo(
-    () => (userLevel === 'ADM' ? POSITION_OPTIONS : POSITION_OPTIONS.filter(o => o.value !== 'ADMIN')),
-    [userLevel]
-  );
+  const visiblePositionOptions = useMemo(() => POSITION_OPTIONS, []);
+
+  const [editForm, setEditForm] = useState({ fullname: '', email: '', phone: '', afdeling: '', gangcode: '', level: '', position: '' });
+  const [editPhoto, setEditPhoto] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (editUser) {
+      setEditForm({
+        fullname: editUser.fullname ?? '',
+        email: editUser.email ?? '',
+        phone: editUser.phone ?? '',
+        afdeling: editUser.afdeling ?? '',
+        gangcode: editUser.gangcode ?? '',
+        level: editUser.level ?? '',
+        position: editUser.position ?? '',
+      });
+      setEditPhoto(null);
+    }
+  }, [editUser]);
 
   useEffect(() => {
     const sp = new URLSearchParams();
@@ -181,14 +197,15 @@ export default function UsersClient() {
       },
       {
         name: <span className="block text-center w-full">{t('actions')}</span>,
-        style: { minWidth: '120px', textAlign: 'center' },
+        style: { minWidth: '160px', textAlign: 'center' },
         cell: row => (
           <div className="flex gap-0.5">
             <button
-              className={`btn btn-xs px-1.5 ${row.status === 'Y' ? 'btn-warning' : 'btn-success'}`}
-              onClick={() => handleToggleStatus(row)}
+              className="btn btn-ghost btn-xs px-1"
+              onClick={() => handleEdit(row.id)}
+              title={t('edit')}
             >
-              {row.status === 'Y' ? t('deactivate') : t('activate')}
+              <Icon name="edit" className="h-4 w-4" />
             </button>
             <button
               className="btn btn-ghost btn-xs px-1"
@@ -196,6 +213,16 @@ export default function UsersClient() {
               title={t('viewDetail')}
             >
               <Icon name="eye-view" className="h-4 w-4" />
+            </button>
+            <button
+              className={`btn btn-ghost btn-xs px-1 ${row.status === 'Y' ? 'text-warning' : 'text-success'}`}
+              onClick={() => {
+                if (row.status === 'Y' && !confirm(t('deactivateConfirm'))) return;
+                handleToggleStatus(row);
+              }}
+              title={row.status === 'Y' ? t('deactivate') : t('activate')}
+            >
+              <Icon name={row.status === 'Y' ? 'close' : 'check'} className="h-4 w-4" />
             </button>
           </div>
         ),
@@ -265,71 +292,24 @@ export default function UsersClient() {
         cell: row => <StatusBadge status={row.status} label={row.status === 'Y' ? t('active') : t('inactive')} />,
       },
     ],
-    [t, handleDetail, handleToggleStatus]
+    [t, handleDetail, handleEdit, handleToggleStatus]
   );
 
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-base-200 w-full">
-      <div className="p-4 sm:p-6 max-w-screen-2xl mx-auto w-full overflow-x-hidden space-y-4">
+    <PageLayout>
         {/* ── Header ── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 items-start">
-          <h1 className="text-2xl sm:text-3xl font-bold min-w-0 truncate">{t('userManagement')}</h1>
-          <div className="flex justify-start sm:justify-end flex-wrap w-full join" data-tour="action-buttons">
-            <AppTour steps={tourSteps} storageKey="tour-users" onStepChange={stepIndex => { if (stepIndex === 3) { setShowFilters(true); } }} btnClassName="join-item flex-1 sm:flex-none" />
-            <button className="btn btn-outline btn-sm flex-1 sm:flex-none join-item" data-tour="filter-button" onClick={() => setShowFilters(s => !s)}>
-              <Icon name="filter" className="h-4 w-4" />
-              <span className="hidden sm:inline">{showFilters ? t('hideFilters') : t('showFilters')}</span>
-            </button>
-            <button
-              className={`btn btn-outline btn-sm flex-1 sm:flex-none join-item ${isFetching ? 'btn-disabled' : ''}`}
-              onClick={() => queryClient.invalidateQueries({ queryKey: QueryKeys.USERS() })}
-              disabled={isFetching}
-              title={t('refresh')}
-            >
-              {isFetching ? (
-                <>
-                  <span className="loading loading-spinner loading-xs" />
-                  <span className="hidden sm:inline">{t('loading')}</span>
-                </>
-              ) : (
-                <>
-                  <Icon name="refresh" className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('refresh')}</span>
-                </>
-              )}
-            </button>
-            <ExportButton onClick={handleExport} label={t('export')} />
-            <button
-              className="btn btn-primary btn-sm flex-1 sm:flex-none join-item"
-              data-tour="add-button"
-              onClick={() => {
-                const defaultFcba = isFcbaRestricted ? userFcba : '';
-                setForm({ ...initialUserForm, fcba: defaultFcba });
-                setForm({ ...initialUserForm, fcba: defaultFcba });
-                setSelFcba(defaultFcba);
-                setSelAfdeling('');
-                setAddOpen(true);
-              }}
-            >
-              <Icon name="plus" className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('addUser')}</span>
-            </button>
-            <button
-              className="btn btn-secondary btn-sm flex-1 sm:flex-none join-item"
-              onClick={() => {
-                const defaultFcba = isFcbaRestricted ? userFcba : '';
-                setBulkRows([{ ...initialBulkRow, fcba: defaultFcba }]);
-                setBulkFcba(defaultFcba);
-                setBulkAfdeling('');
-                setBulkGang('');
-                setBulkOpen(true);
-              }}
-            >
-              <Icon name="people" className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('bulkAdd')}</span>
-            </button>
-          </div>
-        </div>
+        <Toolbar
+          title={t('userManagement')}
+          actions={[
+            { key: 'filter', label: showFilters ? t('hideFilters') : t('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
+            { key: 'refresh', label: isFetching ? t('loading') : t('refresh'), icon: 'refresh', onClick: () => queryClient.invalidateQueries({ queryKey: QueryKeys.USERS() }), disabled: isFetching, loading: isFetching, variant: 'outline' },
+            { key: 'add', label: t('addUser'), icon: 'plus', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setForm({ ...initialUserForm, fcba: df }); setForm({ ...initialUserForm, fcba: df }); setSelFcba(df); setSelAfdeling(''); setAddOpen(true); }, variant: 'primary', tour: 'add-button' },
+            { key: 'bulk', label: t('bulkAdd'), icon: 'people', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setBulkRows([{ ...initialBulkRow, fcba: df }]); setBulkFcba(df); setBulkAfdeling(''); setBulkGang(''); setBulkOpen(true); }, variant: 'outline' },
+          ]}
+        >
+          <AppTour steps={tourSteps} storageKey="tour-users" onStepChange={stepIndex => { if (stepIndex === 3) { setShowFilters(true); } }} />
+          <ExportButton onClick={handleExport} label={t('export')} />
+        </Toolbar>
 
         {/* ── Search ── */}
         <div className="flex justify-end">
@@ -351,9 +331,9 @@ export default function UsersClient() {
               if (key.startsWith('__q_')) return;
               setFilters(prev => ({ ...prev, [key]: value || undefined }));
             }}
-            onApply={() => {}}
+            onApply={() => setAppliedFilters({ ...filters })}
             onReset={clearFilters}
-            showApply={false}
+            showApply={true}
             showReset={true}
           />
         )}
@@ -379,7 +359,6 @@ export default function UsersClient() {
             noDataComponent={<EmptyState namespace="Users" />}
           />
         )}
-      </div>
 
       {/* ═══════════════════════ ADD USER MODAL ═══════════════════════ */}
       <FormModal
@@ -392,10 +371,7 @@ export default function UsersClient() {
         confirmText={t('save')}
       >
         {/* Account Information */}
-        <div className="col-span-12 mt-1">
-          <h4 className="text-sm font-semibold text-base-content/80">{t('accountInfo')}</h4>
-          <div className="mt-1 border-t border-base-300" />
-        </div>
+        <SectionHeader title={t('accountInfo')} />
         <fieldset className="fieldset col-span-12 md:col-span-3">
           <legend className="fieldset-legend">{t('username')} *</legend>
           <input
@@ -450,10 +426,7 @@ export default function UsersClient() {
         </fieldset>
 
         {/* Penempatan */}
-        <div className="col-span-12 mt-2">
-          <h4 className="text-sm font-semibold text-base-content/80">{t('assignment')}</h4>
-          <div className="mt-1 border-t border-base-300" />
-        </div>
+        <SectionHeader title={t('assignment')} />
         <fieldset className="fieldset col-span-12 md:col-span-4">
           <legend className="fieldset-legend">FCBA</legend>
           <SearchSelect
@@ -494,10 +467,7 @@ export default function UsersClient() {
         </fieldset>
 
         {/* Jabatan & Identitas */}
-        <div className="col-span-12 mt-2">
-          <h4 className="text-sm font-semibold text-base-content/80">{t('position')}</h4>
-          <div className="mt-1 border-t border-base-300" />
-        </div>
+        <SectionHeader title={t('position')} />
         <fieldset className="fieldset col-span-12 md:col-span-6">
           <legend className="fieldset-legend">{t('position')}</legend>
           <select
@@ -793,6 +763,113 @@ export default function UsersClient() {
         </div>
       </FormModal>
 
+      {/* ═══════════════════════ EDIT USER MODAL ═══════════════════════ */}
+      <FormModal
+        open={editOpen}
+        title={t('editUser')}
+        onClose={() => { setEditOpen(false); setEditPhoto(null); }}
+        onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
+          e.preventDefault();
+          const data: Record<string, string> = {};
+          const fields = ['fullname', 'email', 'phone', 'afdeling', 'gangcode', 'level', 'position'] as const;
+          for (const f of fields) {
+            if (editForm[f as keyof typeof editForm]) data[f] = editForm[f as keyof typeof editForm];
+          }
+          if (editUser) editMutation.mutate({ id: editUser.id, data, photo: editPhoto });
+        }}
+        loading={editMutation.isPending}
+        cancelText={t('cancel')}
+        confirmText={t('save')}
+      >
+        <fieldset className="fieldset col-span-12 md:col-span-6">
+          <legend className="fieldset-legend">{t('username')}</legend>
+          <input type="text" className="input input-bordered w-full" value={editUser?.username ?? ''} disabled />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-6">
+          <legend className="fieldset-legend">{t('fullname')} *</legend>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editForm.fullname}
+            onChange={e => setEditForm(s => ({ ...s, fullname: e.target.value }))}
+            required
+          />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-6">
+          <legend className="fieldset-legend">Email</legend>
+          <input
+            type="email"
+            className="input input-bordered w-full"
+            value={editForm.email}
+            onChange={e => setEditForm(s => ({ ...s, email: e.target.value }))}
+          />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-6">
+          <legend className="fieldset-legend">{t('phone')}</legend>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editForm.phone}
+            onChange={e => setEditForm(s => ({ ...s, phone: e.target.value }))}
+          />
+        </fieldset>
+
+        <SectionHeader title={t('assignment')} />
+        <fieldset className="fieldset col-span-12 md:col-span-4">
+          <legend className="fieldset-legend">FCBA</legend>
+          <input type="text" className="input input-bordered w-full" value={editUser?.fcba ?? '-'} disabled />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-4">
+          <legend className="fieldset-legend">{t('afdeling')}</legend>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editForm.afdeling}
+            onChange={e => setEditForm(s => ({ ...s, afdeling: e.target.value }))}
+          />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-4">
+          <legend className="fieldset-legend">{t('gangcode')}</legend>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editForm.gangcode}
+            onChange={e => setEditForm(s => ({ ...s, gangcode: e.target.value }))}
+          />
+        </fieldset>
+
+        <SectionHeader title={t('position')} />
+        <fieldset className="fieldset col-span-12 md:col-span-6">
+          <legend className="fieldset-legend">{t('position')}</legend>
+          <select
+            className="select select-bordered w-full"
+            value={editForm.position}
+            onChange={e => {
+              const pos = e.target.value;
+              const lvl = POSITION_TO_LEVEL[pos] || '';
+              setEditForm(s => ({ ...s, position: pos, level: lvl }));
+            }}
+          >
+            <option value="">{t('select')}</option>
+            {visiblePositionOptions.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-6">
+          <legend className="fieldset-legend">{t('level')}</legend>
+          <input type="text" className="input input-bordered w-full" value={editForm.level} disabled />
+        </fieldset>
+
+        <SectionHeader title={t('photo')} />
+        <fieldset className="fieldset col-span-12 flex justify-center">
+          <PhotoUpload
+            value={editPhoto || (editUser?.photo ?? null)}
+            onChange={f => setEditPhoto(f)}
+          />
+        </fieldset>
+      </FormModal>
+
       {/* ═══════════════════════ DETAIL MODAL ═══════════════════════ */}
       <FormModal
         open={detailOpen}
@@ -833,22 +910,12 @@ export default function UsersClient() {
                 <StatusBadge status={detailUser.status} label={detailUser.status === 'Y' ? t('active') : t('inactive')} />
               </dd>
             </dl>
-            <div className="flex gap-2 mt-1">
-              <button
-                className={`btn btn-sm ${detailUser.status === 'Y' ? 'btn-warning' : 'btn-success'}`}
-                onClick={() => {
-                  handleToggleStatus(detailUser);
-                  setDetailOpen(false);
-                }}
-              >
-                {detailUser.status === 'Y' ? t('deactivate') : t('activate')}
-              </button>
-            </div>
+
           </div>
         ) : (
           <p className="col-span-12 text-base-content/60 text-center py-8">{t('noData')}</p>
         )}
       </FormModal>
-    </div>
+    </PageLayout>
   );
 }

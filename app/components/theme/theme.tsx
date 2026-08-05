@@ -3,10 +3,12 @@
 import { Icon } from '@/app/components/ui/icons';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/hooks/useTheme';
+import { useRef } from 'react';
 
 export const Theme = () => {
   const t = useTranslations('Navbar');
   const { theme, changeTheme } = useTheme();
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const handleThemeChange = (
     newTheme: 'light' | 'dark' | 'retro' | 'cyberpunk' | 'valentine' | 'aqua' | 'plant'
@@ -15,6 +17,18 @@ export const Theme = () => {
     // Close the dropdown after selection
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      // Close dropdown by blurring active elements
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      // Return focus to trigger button
+      triggerRef.current?.focus();
     }
   };
 
@@ -29,10 +43,10 @@ export const Theme = () => {
   ] as const;
 
   return (
-    <div className="dropdown dropdown-end w-full">
-      <div
-        tabIndex={0}
-        role="button"
+    <div className="dropdown dropdown-end w-full" onKeyDown={handleKeyDown}>
+      <button
+        ref={triggerRef}
+        type="button"
         className="flex items-center justify-between w-full focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-1"
         aria-label={t('theme')}
       >
@@ -41,7 +55,7 @@ export const Theme = () => {
           <span>{t('theme')}</span>
         </div>
         <Icon name="chevron-down" className="h-3 w-3 opacity-60" />
-      </div>
+      </button>
       <ul
         tabIndex={0}
         className="dropdown-content menu menu-sm bg-base-300 rounded-box z-[100] w-52 p-2 shadow-2xl mt-1"

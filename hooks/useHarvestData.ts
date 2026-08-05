@@ -139,7 +139,7 @@ export function useHarvestData() {
   const [allExpanded, setAllExpanded] = useState(false);
   const galleryRef = useRef<{ expandAll: () => void; collapseAll: () => void }>(null);
 
-  const [filters, setFilters] = useState<HarvestFilters>(() => {
+  const getInitialFilters = (): HarvestFilters => {
     const yesterday = getYesterdayISO();
     const today = getTodayISO();
     return {
@@ -152,7 +152,10 @@ export function useHarvestData() {
       tph: '',
       kemandoran: '',
     };
-  });
+  };
+
+  const [filters, setFilters] = useState<HarvestFilters>(getInitialFilters);
+  const [appliedFilters, setAppliedFilters] = useState<HarvestFilters>(getInitialFilters);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -160,6 +163,11 @@ export function useHarvestData() {
     const tanggal_end = params.get('tanggal_end');
     if (tanggal || tanggal_end) {
       setFilters(prev => ({
+        ...prev,
+        ...(tanggal ? { tanggal } : {}),
+        ...(tanggal_end ? { tanggal_end } : {}),
+      }));
+      setAppliedFilters(prev => ({
         ...prev,
         ...(tanggal ? { tanggal } : {}),
         ...(tanggal_end ? { tanggal_end } : {}),
@@ -296,17 +304,20 @@ export function useHarvestData() {
     isFetching,
     error: queryError,
   } = useQuery({
-    queryKey: [...QueryKeys.HARVEST(filters as Record<string, string>), userLevel, homeFcba, homeSection, homeGang],
+    queryKey: [...QueryKeys.HARVEST(appliedFilters as Record<string, string>), userLevel, homeFcba, homeSection, homeGang],
     queryFn: async () => {
+      const f = getScopedFilters(appliedFilters);
       const p: Record<string, string> = {};
-      if (filters.tanggal) p.tanggal = filters.tanggal;
-      if (filters.tanggal_end) p.tanggal_end = filters.tanggal_end!;
-      if (filters.nodokumen) p.nodokumen = filters.nodokumen;
-      if (filters.kode_karyawan) p.kode_karyawan = filters.kode_karyawan;
-      if (filters.fcba) p.fcba = filters.fcba;
-      if (filters.afdeling) p.afdeling = filters.afdeling;
-      if (filters.tph) p.tph = filters.tph;
-      if (filters.kemandoran) p.kemandoran = filters.kemandoran;
+      if (f.tanggal) p.tanggal = f.tanggal;
+      if (f.tanggal_end) p.tanggal_end = f.tanggal_end!;
+      if (f.nodokumen) p.nodokumen = f.nodokumen;
+      if (f.kode_karyawan) p.kode_karyawan = f.kode_karyawan;
+      if (f.fcba) p.fcba = f.fcba;
+      if (f.afdeling) p.afdeling = f.afdeling;
+      if (f.tph) p.tph = f.tph;
+      if (f.fieldcode) p.fieldcode = f.fieldcode;
+      if (f.kemandoran) p.kemandoran = f.kemandoran;
+      if (f.status_pengangkutan) p.status_pengangkutan = f.status_pengangkutan;
 
       const res = await fetchHarvestList(p);
 
@@ -346,6 +357,7 @@ export function useHarvestData() {
           it.tph,
           it.fieldcode,
           it.status_harvesting,
+          it.status_pengangkutan,
           it.kemandoran,
           dateOnly,
         ]
@@ -372,6 +384,9 @@ export function useHarvestData() {
           _parteno50Num: toNumber(it.parteno50plus),
           _brondolNum: toNumber(it.brondol),
           _panjangNum: toNumber(it.tangkaipanjang),
+          _outputPgknNum: toNumber(it.output_pgkn),
+          _sisaPgknNum: toNumber(it.sisa_pgkn),
+          _tinggalNum: toNumber(it.tinggal),
         };
       });
     },
@@ -1257,6 +1272,9 @@ export function useHarvestData() {
       overripe: 0,
       busuk: 0,
       brondol: 0,
+      output_pgkn: 0,
+      sisa_pgkn: 0,
+      tinggal: 0,
     };
 
     for (const it of items) {
@@ -1268,6 +1286,9 @@ export function useHarvestData() {
         totals.overripe += it._overNum || 0;
         totals.busuk += it._busukNum || 0;
         totals.brondol += it._brondolNum || 0;
+        totals.output_pgkn += (it._outputPgknNum ?? 0);
+        totals.sisa_pgkn += (it._sisaPgknNum ?? 0);
+        totals.tinggal += (it._tinggalNum ?? 0);
       }
     }
 
@@ -1340,7 +1361,7 @@ export function useHarvestData() {
     q, setQ, isSearchFocused, setIsSearchFocused,
     showFilters, setShowFilters,
     searchInputRef,
-    filters, setFilters,
+    filters, setFilters, appliedFilters, setAppliedFilters,
     viewMode, setViewMode, allExpanded, setAllExpanded,
     galleryRef,
 

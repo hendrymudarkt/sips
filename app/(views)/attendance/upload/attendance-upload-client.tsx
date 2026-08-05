@@ -15,6 +15,8 @@ import { formatPerfDate, formatPerfNumber } from '@/utils/helpers/perf-formatter
 import { useUploadPage } from '@/hooks/useUploadPage';
 import { Icon } from '@/app/components/ui/icons';
 import { FilterBar } from '@/app/components/ui/filter-bar';
+import { ConfirmModal } from '@/app/components/ui/confirm-modal';
+import { UploadLayout } from '@/app/components/ui/upload-layout';
 
 const EMPTY_PARAMS: AttendanceUploadParams = {
   tanggal: '',
@@ -63,6 +65,7 @@ export default function AttendanceUploadPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitProgress, setSubmitProgress] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const fetchData = async (overrideParams?: AttendanceUploadParams) => {
     setLoading(true);
@@ -368,16 +371,16 @@ export default function AttendanceUploadPage() {
     [localeTag]
   );
 
-  const handleSubmitAttendance = async () => {
+  const handleSubmitAttendance = () => {
     if (data.length === 0) {
       setError('Tidak ada data untuk dikirim. Silakan cari data terlebih dahulu.');
       return;
     }
+    setConfirmOpen(true);
+  };
 
-    if (!window.confirm(`Yakin ingin mengirim ${data.length} record ke SIPS?`)) {
-      return;
-    }
-
+  const handleConfirmAttendance = async () => {
+    setConfirmOpen(false);
     setSubmitting(true);
     setError(null);
     setSubmitProgress('Preparing data...');
@@ -540,11 +543,10 @@ export default function AttendanceUploadPage() {
   };
 
   if (initCheck && !isMgr && !isAdmin) return <AccessDenied />;
-  if (!initCheck) return <div className="min-h-screen bg-base-100 p-6" />;
+  if (!initCheck) return <UploadLayout />;
 
   return (
-    <div className="min-h-screen bg-base-100 p-6">
-      <div className="max-w-7xl mx-auto">
+    <UploadLayout>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
@@ -724,8 +726,15 @@ export default function AttendanceUploadPage() {
             noDataComponent={<div className="py-8 text-base-content/70">Tidak ada data.</div>}
           />
         )}
-      </div>
-    </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Konfirmasi"
+        message={`Yakin ingin mengirim ${data.length} record ke SIPS?`}
+        onConfirm={handleConfirmAttendance}
+        onCancel={() => setConfirmOpen(false)}
+        loading={submitting}
+      />
+    </UploadLayout>
   );
 }
 

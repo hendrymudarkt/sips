@@ -290,7 +290,7 @@ export default function LhmReport() {
           afdeling,
           kemandoran,
         });
-        const res = await fetch(`/api/lhm/approval-signatures?${params.toString()}`);
+        const res = await fetch(`/api/lhm/approval/signatures?${params.toString()}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         if (json.success && json.data) {

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { GET } from './route';
 import { NextRequest } from 'next/server';
-import { getTokenFromCookie } from '@/utils/absensiProxy';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 
-vi.mock('@/utils/absensiProxy', () => ({
+vi.mock('@/utils/api/upstreamProxy', () => ({
   getTokenFromCookie: vi.fn(),
   BACKEND_URL: 'http://trusted-backend.com',
   ABSENSI_BASE: 'http://trusted-backend.com/api/absensi',

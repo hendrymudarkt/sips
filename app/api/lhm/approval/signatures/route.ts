@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/absensiProxy';
+import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { applyUserDataScope } from '@/utils/api/requestScope';
 
 export const dynamic = 'force-dynamic';
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('❌ Signatures fetch crash:', error);
+    console.error('âŒ Signatures fetch crash:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to fetch signatures', data: {} },
       { status: 500 }

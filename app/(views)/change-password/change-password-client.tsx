@@ -23,15 +23,19 @@
  *   - Validator sebagai pure function terpisah
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { toTitleCase } from '@/utils/helpers/textManipulation';
 import { getProxiedImageUrl } from '@/utils/helpers/imageHelper';
+import { cookieStore } from '@/utils/auth/cookieStore';
 import type { UserProfile } from '@/app/types';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
 import { Icon } from '@/app/components/ui/icons';
+import toast from 'react-hot-toast';
+import { FormModal } from '@/app/components/ui/form-modal';
+import { PhotoUpload } from '@/app/components/ui/photo-upload';
 
 // --- Types --------------------------------------------------------------------
 
@@ -288,7 +292,7 @@ function FormAlert({ type, message }: { type: 'error' | 'success'; message: stri
 }
 
 /** Menampilkan kartu profil pengguna di sisi kiri. */
-function UserProfileCard({ profile }: { profile: UserProfile | null }) {
+function UserProfileCard({ profile, onEditProfile }: { profile: UserProfile | null; onEditProfile: () => void }) {
   const t = useTranslations('Profile');
 
   if (!profile) {
@@ -323,6 +327,11 @@ function UserProfileCard({ profile }: { profile: UserProfile | null }) {
 
         <h2 className="card-title text-xl font-bold">{displayName}</h2>
         <div className="badge badge-secondary badge-outline mt-1 mb-4">{displayRole}</div>
+
+        <button className="btn btn-outline btn-sm w-full mb-3" onClick={onEditProfile}>
+          <Icon name="edit" className="h-4 w-4" />
+          {t('editProfile')}
+        </button>
 
         <dl className="w-full flex flex-col gap-3 text-left mt-2 text-sm">
           {PROFILE_FIELDS.map(({ label, key }) => (
@@ -439,6 +448,81 @@ function ChangePasswordForm() {
 // --- Page Component (Composition Root) ---------------------------------------
 
 export default function ChangePasswordPage({ profile }: ChangePasswordPageProps) {
+  const t = useTranslations('Profile');
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editProfileLoading, setEditProfileLoading] = useState(false);
+  const [editProfileForm, setEditProfileForm] = useState({ fullname: '', email: '', phone: '' });
+  const [editProfilePhoto, setEditProfilePhoto] = useState<File | null>(null);
+  const [localProfile, setLocalProfile] = useState<UserProfile | null>(profile);
+
+  const handleEditProfile = useCallback(() => {
+    if (!profile) return;
+    setEditProfileForm({
+      fullname: profile.fullname ?? '',
+      email: profile.email ?? '',
+      phone: profile.phone ?? '',
+    });
+    setEditProfilePhoto(null);
+    setEditProfileOpen(true);
+  }, [profile]);
+
+  const handleEditProfileSubmit = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setEditProfileLoading(true);
+
+    try {
+      const csrfToken = document.cookie.match(/csrf_token=([^;]+)/)?.[1];
+      const data: Record<string, string> = {};
+      if (editProfileForm.fullname) data.fullname = editProfileForm.fullname;
+      if (editProfileForm.email) data.email = editProfileForm.email;
+      if (editProfileForm.phone) data.phone = editProfileForm.phone;
+
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-Token': csrfToken || '',
+        },
+        body: JSON.stringify(data),
+      });
+      const json: Record<string, unknown> = await res.json();
+      if (!res.ok || !json.ok) throw new Error(String(json.message ?? json.error ?? 'Failed to update profile'));
+
+      const profileData = (json.data as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
+      const newFullname = (profileData?.fullname as string) || editProfileForm.fullname;
+      cookieStore.setCookie('user_FullName', newFullname);
+
+      if (editProfilePhoto) {
+        const fd = new FormData();
+        fd.append('photo', editProfilePhoto);
+        const photoRes = await fetch('/api/auth/photo', {
+          method: 'POST',
+          credentials: 'include',
+          body: fd,
+        });
+        const photoJson: Record<string, unknown> = await photoRes.json();
+        if (!photoRes.ok || !photoJson.ok) throw new Error(String(photoJson.message ?? 'Photo upload failed'));
+
+        const pd = photoJson.data;
+        const photoUrl = typeof pd === 'string' ? pd : (pd as Record<string, unknown>)?.data ?? '';
+        if (photoUrl) {
+          cookieStore.setCookie('user_Photo', String(photoUrl));
+        }
+      } else if (profileData?.photo) {
+        cookieStore.setCookie('user_Photo', String(profileData.photo));
+      }
+
+      setEditProfileOpen(false);
+      toast.success(t('profileUpdated'));
+      setLocalProfile(prev => prev ? { ...prev, ...data, ...(profileData ?? {}) } : prev);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t('profileUpdateFailed'));
+    } finally {
+      setEditProfileLoading(false);
+    }
+  }, [editProfileForm, editProfilePhoto, t]);
+
   return (
     <div className="min-h-[calc(100vh-64px)] bg-base-200 p-4 md:p-8 flex justify-center items-start pt-10 relative overflow-hidden">
       {/* Background Decorations */}
@@ -449,12 +533,57 @@ export default function ChangePasswordPage({ profile }: ChangePasswordPageProps)
 
       <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-6 relative z-0">
         <div className="md:col-span-1">
-          <UserProfileCard profile={profile} />
+          <UserProfileCard profile={localProfile} onEditProfile={handleEditProfile} />
         </div>
         <div className="md:col-span-2">
           <ChangePasswordForm />
         </div>
       </div>
+
+      {/* Edit Profile Modal */}
+      <FormModal
+        open={editProfileOpen}
+        title={t('editProfileTitle')}
+        onClose={() => { setEditProfileOpen(false); setEditProfilePhoto(null); }}
+        onSubmit={handleEditProfileSubmit}
+        loading={editProfileLoading}
+        confirmText={t('save')}
+      >
+        <fieldset className="fieldset col-span-12 md:col-span-4">
+          <legend className="fieldset-legend">{t('fullname')} *</legend>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editProfileForm.fullname}
+            onChange={e => setEditProfileForm(s => ({ ...s, fullname: e.target.value }))}
+            required
+          />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-4">
+          <legend className="fieldset-legend">Email</legend>
+          <input
+            type="email"
+            className="input input-bordered w-full"
+            value={editProfileForm.email}
+            onChange={e => setEditProfileForm(s => ({ ...s, email: e.target.value }))}
+          />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 md:col-span-4">
+          <legend className="fieldset-legend">{t('phone')}</legend>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editProfileForm.phone}
+            onChange={e => setEditProfileForm(s => ({ ...s, phone: e.target.value }))}
+          />
+        </fieldset>
+        <fieldset className="fieldset col-span-12 flex justify-center">
+          <PhotoUpload
+            value={editProfilePhoto || (profile?.photo ?? null)}
+            onChange={f => setEditProfilePhoto(f)}
+          />
+        </fieldset>
+      </FormModal>
     </div>
   );
 }
