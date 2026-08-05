@@ -5,6 +5,7 @@ import { ThemeProvider } from './components/theme/theme-provider';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Providers from './components/auth/providers';
+import { env } from '@/lib/env';
 
 // Use font-display swap so fonts do not block the initial render.
 const geistSans = Geist({
@@ -26,12 +27,16 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
   return {
+    metadataBase: new URL(baseUrl),
     title: {
-      template: '%s | SiPS Mobile Web',
-      default: 'SiPS Mobile Web',
+      template: '%s | SiPS Mobile',
+      default: 'SiPS Mobile',
     },
-    description: 'SiPS Mobile Web application by PT Sentosa Kalimantan Jaya',
+    description:
+      'SiPS Mobile — SKJ Integrated Plantation System. Sistem informasi perkebunan terintegrasi PT Sentosa Kalimantan Jaya.',
     manifest: '/manifest.json',
     icons: {
       icon: '/logo.svg',
@@ -41,6 +46,30 @@ export async function generateMetadata(): Promise<Metadata> {
       capable: true,
       statusBarStyle: 'default',
       title: 'SiPS Mobile',
+    },
+    openGraph: {
+      type: 'website',
+      locale: 'id_ID',
+      url: baseUrl,
+      siteName: 'SiPS Mobile',
+      title: 'SiPS Mobile | SKJ Integrated Plantation System',
+      description:
+        'Sistem informasi perkebunan terintegrasi PT Sentosa Kalimantan Jaya — Monitoring, Pengangkutan, dan Pelaporan.',
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'SiPS Mobile — SKJ Integrated Plantation System',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'SiPS Mobile | SKJ Integrated Plantation System',
+      description:
+        'Sistem informasi perkebunan terintegrasi PT Sentosa Kalimantan Jaya.',
+      images: ['/og-image.png'],
     },
   };
 }
