@@ -90,3 +90,8 @@
 **Learning:** Pure CSS dropdown components (like DaisyUI's `dropdown-end`) often lack keyboard support and stay "sticky" when options inside are clicked, which degrades accessibility and user experience. Upgrading the trigger to a semantic HTML `<button type="button">`, pairing it with an `Escape` key listener that blurs `document.activeElement` and returns focus to the trigger, and programmatically blurring the focused element upon selecting dropdown options provides an incredibly fluid, accessible, and delightful interactive experience.
 
 **Action:** Always prefer native `<button>` elements for DaisyUI dropdown triggers. Provide robust keyboard dismissal with `Escape` that returns focus to the trigger, and programmatically blur the active element on dropdown selection to immediately collapse the persistent CSS-only dropdown menu.
+
+## 2026-04-10 - [Accessible Responsive Action Buttons in Toolbars]
+**Learning:** Buttons in toolbars that responsively hide text labels on smaller viewports must always maintain an explicit `aria-label` attribute (rather than setting it conditionally only when an icon is present) to guarantee screen-reader clarity across all layouts. Additionally, pairing them with robust focus indicators like `focus-visible:ring-2 focus-visible:ring-primary` ensures a seamless, visible navigation anchor for keyboard-only users.
+
+**Action:** Ensure all responsive action buttons inside toolbars have static, non-conditional `aria-label` attributes and include explicit keyboard focus ring indicators.

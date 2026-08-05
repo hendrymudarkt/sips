@@ -41,12 +41,12 @@ export function Toolbar({ title, titleTooltip, actions, tour, children }: Toolba
           return (
             <button
               key={action.key}
-              className={`btn flex-1 sm:flex-none ${variantClass} btn-sm join-item${action.loading ? ' btn-disabled' : ''}${action.disabled ? ' btn-disabled' : ''}`}
+              className={`btn flex-1 sm:flex-none ${variantClass} btn-sm join-item focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none${action.loading ? ' btn-disabled' : ''}${action.disabled ? ' btn-disabled' : ''}`}
               onClick={action.onClick}
               disabled={action.disabled || action.loading}
               data-tour={action.tour}
               title={action.label}
-              aria-label={action.icon ? action.label : undefined}
+              aria-label={action.label}
             >
               {action.loading ? (
                 <><span className="loading loading-spinner loading-xs" /><span className="hidden sm:inline">{action.label}</span></>

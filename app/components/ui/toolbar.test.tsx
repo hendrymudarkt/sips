@@ -27,10 +27,24 @@ describe('Toolbar', () => {
     expect(screen.getByText('Test Title')).toBeDefined();
   });
 
-  it('renders action buttons with labels', () => {
+  it('renders action buttons with labels, aria-labels, and focus-visible classes', () => {
     render(<Toolbar {...defaultProps} />);
-    expect(screen.getByText('Add Item')).toBeDefined();
-    expect(screen.getByText('Delete Item')).toBeDefined();
+
+    const addButton = screen.getByText('Add Item').closest('button');
+    const deleteButton = screen.getByText('Delete Item').closest('button');
+
+    expect(addButton).toBeDefined();
+    expect(deleteButton).toBeDefined();
+
+    // Verify focus rings are present
+    expect(addButton?.className).toContain('focus-visible:ring-2');
+    expect(addButton?.className).toContain('focus-visible:ring-primary');
+    expect(deleteButton?.className).toContain('focus-visible:ring-2');
+    expect(deleteButton?.className).toContain('focus-visible:ring-primary');
+
+    // Verify aria-labels are present and correct
+    expect(addButton?.getAttribute('aria-label')).toBe('Add Item');
+    expect(deleteButton?.getAttribute('aria-label')).toBe('Delete Item');
   });
 
   it('handles click events on buttons', () => {
