@@ -3,19 +3,37 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { validateSecurity } from '@/lib/auth/security';
+import { changePasswordRateLimiter } from '@/lib/auth/rateLimiter';
 
 const changePasswordSchema = z.object({
   current_password: z.string().min(1).max(200),
   new_password: z
     .string()
     .min(8, 'Password minimal 8 karakter')
-    .max(200, 'Password maksimal 200 karakter'),
+    .max(200, 'Password maksimal 200 karakter')
+    .regex(/[A-Z]/, 'Password harus mengandung setidaknya satu huruf besar')
+    .regex(/[0-9]/, 'Password harus mengandung setidaknya satu angka')
+    .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, 'Password harus mengandung setidaknya satu karakter spesial'),
 });
 
 export async function POST(request: NextRequest) {
   try {
     const securityError = await validateSecurity(request);
     if (securityError) return securityError;
+
+    // === SPECIFIC RATE LIMITING FOR PASSWORD CHANGE ===
+    const ip =
+      request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
+    try {
+      await changePasswordRateLimiter.consume(ip);
+    } catch {
+      return NextResponse.json(
+        { ok: false, error: 'Too many password change attempts. Try again in 1 minute.' },
+        { status: 429 }
+      );
+    }
 
     const body = await request.json();
     const parsed = changePasswordSchema.safeParse(body);
