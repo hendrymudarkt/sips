@@ -23,7 +23,7 @@ import { fetchBusinessUnits } from '@/utils/services/businessUnitService';
 import type { SectionMaster } from '@/utils/services/masterDataService';
 import { fetchGangs, fetchSections } from '@/utils/services/masterDataService';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
-import { formatPerfDate } from '@/utils/helpers/perf-formatter';
+import { formatPerfDate, getCachedCollator } from '@/utils/helpers/perf-formatter';
 
 /* =========================
    T Y P E S
@@ -306,6 +306,8 @@ const normalizeHM = (input: string) => {
 ========================= */
 export default function Attendance() {
   const localeTag = useLocale();
+  const collator = getCachedCollator(localeTag);
+  const collatorBase = getCachedCollator(localeTag, { sensitivity: 'base' });
   const queryClient = useQueryClient();
   const t = useTranslations('Attendance');
   const [q, setQ] = useState('');
@@ -960,12 +962,12 @@ export default function Attendance() {
           value: b.fccode,
           label: b.fcname ? `${b.fccode} - ${b.fcname}` : b.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
     return Array.from(new Set(triplets.map(t => t.fcba).filter(Boolean)))
-      .sort()
+      .sort((a, b) => collator.compare(a, b))
       .map(v => ({ value: v, label: v }));
-  }, [triplets, businessUnits]);
+  }, [triplets, businessUnits, collator]);
 
   // convert homeFcba (which might be fcname or fccode) to actual fccode for proper filtering
   const homeFcbaCode = useMemo(() => {
@@ -989,7 +991,7 @@ export default function Attendance() {
             ? `${section.fccode} - ${section.fcname}`
             : section.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
 
     if (sectionsFromMaster.length) return sectionsFromMaster;
 
@@ -1011,9 +1013,9 @@ export default function Attendance() {
           .filter(Boolean)
       )
     )
-      .sort()
+      .sort((a, b) => collator.compare(a, b))
       .map(v => ({ value: v, label: v }));
-  }, [triplets, selFcba, buLookups, masterSections, destSection]);
+  }, [triplets, selFcba, buLookups, masterSections, destSection, collator]);
 
   const gangOptions: Option[] = useMemo(() => {
     if (!selFcba || !selSection) return [];
@@ -1025,7 +1027,7 @@ export default function Attendance() {
             ? `${gang.fccode} - ${gang.fcname}`
             : gang.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+      .sort((a, b) => collator.compare(a.label, b.label));
 
     if (gangsFromMaster.length) return gangsFromMaster;
 
@@ -1042,9 +1044,9 @@ export default function Attendance() {
           .filter(Boolean)
       )
     )
-      .sort()
+      .sort((a, b) => collator.compare(a, b))
       .map(v => ({ value: v, label: v }));
-  }, [triplets, selFcba, selSection, buLookups, masterGangs]);
+  }, [triplets, selFcba, selSection, buLookups, masterGangs, collator]);
 
   const currentFcbaPreresolved = useMemo(() => {
     const fcba = currentFcbaForForm || form.fcba || selFcba;
@@ -1077,9 +1079,9 @@ export default function Attendance() {
       if (!map.has(value)) map.set(value, label);
     }
     return Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      collator.compare(a.label, b.label)
     );
-  }, [employees, selFcba, selSection, selGang, currentFcbaPreresolved, buLookups]);
+  }, [employees, selFcba, selSection, selGang, currentFcbaPreresolved, buLookups, collator]);
 
   // destination select options should include every FCBA, including the user's current FCBA.
   const destOptions = useMemo(() => {
@@ -1089,7 +1091,7 @@ export default function Attendance() {
           value: bu.fccode,
           label: bu.fcname ? `${bu.fccode} - ${bu.fcname}` : bu.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
 
     if (optFcba && optFcba.length > 0) {
@@ -1098,11 +1100,11 @@ export default function Attendance() {
           value: fcba,
           label: fcba,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     }
 
     return fcbaOptions;
-  }, [optFcba, fcbaOptions, businessUnits]);
+  }, [optFcba, fcbaOptions, businessUnits, collator]);
 
   const destSectionOptions: Option[] = useMemo(() => {
     if (!destFcba) return [];
@@ -1116,8 +1118,8 @@ export default function Attendance() {
             ? `${section.fccode} - ${section.fcname}`
             : section.fccode,
       }))
-      .sort((a, b) => a.label.localeCompare(b.label));
-  }, [destFcba, destSections, selSection]);
+      .sort((a, b) => collator.compare(a.label, b.label));
+  }, [destFcba, destSections, selSection, collator]);
 
   const mandorOptions: Option[] = useMemo(() => {
     const fcba = currentFcbaForForm || form.fcba || homeFcbaCode || homeFcba || '';
@@ -1152,7 +1154,7 @@ export default function Attendance() {
       if (!map.has(value)) map.set(value, gangLabel ? `${gangLabel} - ${name || value}` : label);
     }
     return Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) =>
-      a.label.localeCompare(b.label)
+      collator.compare(a.label, b.label)
     );
   }, [
     employees,
@@ -1166,6 +1168,7 @@ export default function Attendance() {
     buLookups,
     currentFcbaPreresolved,
     selFcba,
+    collator,
   ]);
 
   /**
@@ -1569,8 +1572,11 @@ export default function Attendance() {
   }, [preview]);
 
   /* ===== Columns ===== */
-  const sortByLabel = (a: Absensi, b: Absensi, getLabel: (r: Absensi) => string) =>
-    getLabel(a).localeCompare(getLabel(b), undefined, { sensitivity: 'base' });
+  const sortByLabel = useCallback(
+    (a: Absensi, b: Absensi, getLabel: (r: Absensi) => string) =>
+      collatorBase.compare(getLabel(a), getLabel(b)),
+    [collatorBase]
+  );
 
   const columns: TableColumn<Absensi>[] = useMemo(
     () => [
@@ -1837,7 +1843,7 @@ export default function Attendance() {
         ignoreRowClick: true,
       },
     ],
-    [handleDetail, handleDelete, userLevel, t]
+    [handleDetail, handleDelete, userLevel, t, sortByLabel]
   );
 
   /* ===== EXPORT EXCEL ===== */

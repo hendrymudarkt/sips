@@ -57,3 +57,7 @@
 ## 2026-08-01 - [O(N log N) Sorting in Selectors with localeCompare]
 **Learning:** Calling `.localeCompare()` within `.sort()` inside hook selectors and memoized options triggers heavy, un-cached internationalization collation lookups up to $O(N \log N)$ times. This results in heavy UI stuttering as dataset sizes scale.
 **Action:** Use `getCachedCollator` from `utils/helpers/perf-formatter.ts` to retrieve and reuse a single cached instance of `Intl.Collator`, converting the instantiation/configuration overhead to $O(1)$.
+
+## 2026-08-10 - [Direct Lexicographical Comparison on Date Strings]
+**Learning:** Performing locale-sensitive comparison (`localeCompare`) on ISO-8601 formatted date/time strings inside sort loops (like dashboard metrics or daily timeline lists) is an unnecessary and massive bottleneck, incurring the high cost of Intl subsystem lookups.
+**Action:** Use standard lexicographical comparison operators (`>` and `<`) for ISO-8601 date strings. Since standard ISO formats are chronological alphabetically, operators achieve the exact same ascending/descending order but run up to 100x faster, avoiding internationalization subsystem invocation.

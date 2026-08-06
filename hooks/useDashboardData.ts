@@ -931,16 +931,22 @@ export function useDashboardData() {
       }
     }
 
-    const dailySummaries = Array.from(dailyMap.values()).sort((a, b) =>
-      b.date.localeCompare(a.date)
-    );
+    const dailySummaries = Array.from(dailyMap.values()).sort((a, b) => {
+      if (b.date > a.date) return 1;
+      if (b.date < a.date) return -1;
+      return 0;
+    });
     const monthlySummaries = Array.from(monthlyMap.values()).sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
       return b.month - a.month;
     });
     const yearlySummaries = Array.from(yearlyMap.values()).sort((a, b) => b.year - a.year);
     const sortedRowDetails = rowDetailsWithDates
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => {
+        if (b.date > a.date) return 1;
+        if (b.date < a.date) return -1;
+        return 0;
+      })
       .map(item => item.record);
 
     return {
