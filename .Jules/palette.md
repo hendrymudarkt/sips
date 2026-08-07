@@ -90,3 +90,8 @@
 **Learning:** Pure CSS dropdown components (like DaisyUI's `dropdown-end`) often lack keyboard support and stay "sticky" when options inside are clicked, which degrades accessibility and user experience. Upgrading the trigger to a semantic HTML `<button type="button">`, pairing it with an `Escape` key listener that blurs `document.activeElement` and returns focus to the trigger, and programmatically blurring the focused element upon selecting dropdown options provides an incredibly fluid, accessible, and delightful interactive experience.
 
 **Action:** Always prefer native `<button>` elements for DaisyUI dropdown triggers. Provide robust keyboard dismissal with `Escape` that returns focus to the trigger, and programmatically blur the active element on dropdown selection to immediately collapse the persistent CSS-only dropdown menu.
+
+## 2026-03-29 - [Centralized Standardized Page Error Accessibility Boundary]
+**Learning:** Having duplicated, unstyled, or unlocalized error boundaries on individual sub-pages degrades the consistency of the user experience and leaves keyboard or screen reader users disconnected from status recovery. Standardizing all page-level errors into a localized, accessible card-based `<PageError>` component—fully integrated with dynamic aria-live regions, pulsing warnings, and standardized focus-visible focus rings—restores user confidence and enables keyboard-only recovery from application state exceptions.
+
+**Action:** Consolidate any individual page error boundaries to import and delegate rendering to the shared `<PageError>` component. Ensure all error rendering handles translation namespaces gracefully and keeps visual animations in sync with assistive technologies.
