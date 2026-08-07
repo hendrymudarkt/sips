@@ -83,7 +83,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
       formId="attendance-form"
       size="lg"
     >
-      <div className="grid grid-cols-12 gap-2">
+      <div className="grid grid-cols-12 gap-2 col-span-12">
           <div className="col-span-12">
             <h4 className="text-sm font-semibold text-base-content/80">{t('formInfoTitle')}</h4>
             <div className="mt-1 border-t border-base-300" />
@@ -100,7 +100,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
             <legend className="fieldset-legend">{t('formTimeIn')}</legend>
             <input type="time" className="input input-bordered w-full" value={form.time_in ?? ''}
               onChange={e => setForm(s => ({ ...s, time_in: e.target.value }))} required
-              disabled={disableUnlessAllowed(false)} title={t('hintTimeIn')} />
+              disabled={disableUnlessAllowed(true)} title={t('hintTimeIn')} />
           </fieldset>
 
           <fieldset className="fieldset col-span-12 md:col-span-2">
@@ -185,7 +185,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
             <SearchSelect options={gangOptions} value={selGang ?? ''}
               onChange={onChangeGang}
               placeholder={isLoadingGangs ? 'Memuat...' : selSection ? 'Pilih Gang' : 'Pilih Afdeling dulu'}
-              disabled={!selSection || disableUnlessAllowed(false) || isLoadingGangs} />
+              disabled={!selSection || disableUnlessAllowed(true) || isLoadingGangs} />
           </fieldset>
 
           <div className="col-span-12 mt-1">
@@ -202,9 +202,9 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
           </fieldset>
 
           <fieldset className="fieldset col-span-12 md:col-span-2">
-            <legend className="fieldset-legend">{t('formKemandoran')}</legend>
+            <legend className="fieldset-legend">{t('formKemandoran')} *</legend>
             <input type="text" className="input input-bordered w-full" value={selectedMandorGang}
-              readOnly disabled title={t('formKemandoranTooltip')} />
+              readOnly disabled required title={t('formKemandoranTooltip')} />
           </fieldset>
 
           <fieldset className="fieldset col-span-12 md:col-span-4">
@@ -212,7 +212,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
             <SearchSelect options={employeeOptions} value={form.kode_karyawan ?? ''}
               onChange={onChangeEmployee}
               placeholder={isLoadingSmp ? 'Memuat Karyawan...' : selGang ? 'Pilih Karyawan' : 'Pilih Gang dulu'}
-              disabled={!selGang || disableUnlessAllowed(false) || isLoadingSmp} />
+              disabled={!selGang || disableUnlessAllowed(true) || isLoadingSmp} />
           </fieldset>
 
           <fieldset className="fieldset col-span-12 md:col-span-2">
@@ -220,7 +220,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
             <input type="text" className="input input-bordered w-full" value={form.pengancakan ?? ''}
               onChange={e => setForm(s => ({ ...s, pengancakan: e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() }))}
               placeholder={selGang ? 'Masukkan No Ancak' : 'Pilih Gang/Karyawan dulu'}
-              disabled={!selGang || disableUnlessAllowed(false) || isLoadingSmp} />
+              disabled={!selGang || disableUnlessAllowed(true) || isLoadingSmp} />
           </fieldset>
 
           <details className="col-span-12" open={false}>
@@ -278,14 +278,14 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
           </div>
 
           <fieldset className="fieldset col-span-12 md:col-span-6">
-            <legend className="fieldset-legend">{t('formExceptionCase')}{!isEditing ? ' *' : ''}</legend>
+            <legend className="fieldset-legend">{t('formExceptionCase')} *</legend>
             <textarea className="textarea textarea-bordered min-h-24 w-full" value={form.exception_case ?? ''}
               onChange={e => setForm(s => ({ ...s, exception_case: e.target.value }))}
-              required={!isEditing} />
+              required />
           </fieldset>
 
           <fieldset className="fieldset col-span-12 md:col-span-6">
-            <legend className="fieldset-legend">{t('formBaExca')}{!isEditing ? ' *' : ''}</legend>
+            <legend className="fieldset-legend">{t('formBaExca')} *</legend>
             <input ref={pdfRef} type="file" accept="application/pdf" className="file-input file-input-bordered w-full"
               onChange={e => {
                 const file = e.target.files?.[0];
@@ -297,7 +297,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
                 setFileError('');
                 setForm(s => ({ ...s, no_ba_exca_file: file }));
               }}
-              required={!isEditing} />
+              required={!isEditing || !form.no_ba_exca} />
             {fileError && <p className="text-error text-sm mt-1">{fileError}</p>}
             {form.no_ba_exca && (
               <div className="mt-1">

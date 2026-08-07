@@ -168,7 +168,7 @@ export default memo(function Navbar() {
                 className="w-full text-left"
                 disabled={!!isNavigating}
               >
-                {t('changePassword')}
+                {t('profile')}
               </button>
             </li>
             <li>

@@ -29,6 +29,7 @@ import { FilterBar, type FilterField } from '@/app/components/ui/filter-bar';
 import { QuickSearch } from '@/app/components/ui/quick-search';
 import { StatusBadge } from '@/app/components/ui/status-badge';
 import { PageLayout } from '@/app/components/ui/page-layout';
+import { SummaryCards } from '@/app/components/ui/summary-cards';
 
 /* =========================
    T Y P E S
@@ -1398,15 +1399,18 @@ export default function Attendance() {
       const hasUploadedPdf = form.no_ba_exca_file instanceof File;
       const hasExistingPdf = !!form.no_ba_exca;
 
-      const exceptionRequired = !isEditing;
-      const baExcaRequired = !isEditing;
+      const kemandoranValue = selectedMandorGang || form.kemandoran || '';
 
-      if (exceptionRequired && !hasException) {
+      if (!hasException) {
         throw new Error(t('valExceptionRequired'));
       }
 
-      if (baExcaRequired && !hasUploadedPdf && !hasExistingPdf) {
-        throw new Error(t('valBaExcaRequired')); // Fixed: was 'No BA ExlA' changed to 'No BA Exca'
+      if (!hasUploadedPdf && !hasExistingPdf) {
+        throw new Error(t('valBaExcaRequired'));
+      }
+
+      if (!kemandoranValue) {
+        throw new Error(t('valKemandoranRequired'));
       }
 
       const timeInApi = combineToApiString(form.tanggal, form.time_in);
@@ -1651,14 +1655,6 @@ export default function Attendance() {
         width: '120px',
       },
       {
-        name: <span title={t('colKaryawanTooltip')}>{t('colKaryawan')}</span>,
-        style: { flexGrow: 2 as number, minWidth: '220px' },
-        width: '240px',
-        sortable: true,
-        sortFunction: (a, b) => sortByLabel(a, b, r => r._karyawanLabel || ''),
-        cell: (r: Absensi) => <EmployeeNameCell name={r._karyawanName} code={r._karyawanCode} />,
-      },
-      {
         name: <span title={t('colMandorTooltip')}>{t('colMandor')}</span>,
         width: '200px',
         style: { flexGrow: 1.5 as number, minWidth: '220px' },
@@ -1670,6 +1666,14 @@ export default function Attendance() {
           ) : (
             <>-</>
           ),
+      },
+      {
+        name: <span title={t('colKaryawanTooltip')}>{t('colKaryawan')}</span>,
+        style: { flexGrow: 2 as number, minWidth: '220px' },
+        width: '240px',
+        sortable: true,
+        sortFunction: (a, b) => sortByLabel(a, b, r => r._karyawanLabel || ''),
+        cell: (r: Absensi) => <EmployeeNameCell name={r._karyawanName} code={r._karyawanCode} />,
       },
       {
         name: <span title={t('colFcbaTooltip')}>{t('colFcba')}</span>,
@@ -1911,6 +1915,25 @@ export default function Attendance() {
     return enrichedItems.filter(it => it._searchContent?.includes(s));
   }, [q, enrichedItems]);
 
+  const attendanceCards = useMemo(() => {
+    let totalCheckOut = 0;
+    for (const it of filtered) {
+      if (it.time_out) totalCheckOut++;
+    }
+    return [
+      {
+        label: t('totalKaryawan'),
+        value: filtered.length,
+        className: 'text-primary',
+      },
+      {
+        label: t('totalCheckOut'),
+        value: totalCheckOut,
+        className: 'text-success',
+      },
+    ];
+  }, [filtered, t]);
+
   const disableUnlessAllowed = (allowed: boolean) => (isEditing ? !allowed : false);
 
   const canAddOrEdit = userLevel === 'ADM' || userLevel === 'KSI';
@@ -2007,35 +2030,39 @@ export default function Attendance() {
           />
         </Toolbar>
 
-        {/* Quick Search & View Toggle */}
-        <div className="flex items-center gap-2 justify-end animate-slideUp [animation-delay:100ms]">
-          <QuickSearch value={q} onChange={setQ} placeholder={t('searchPlaceholder')} className="w-full sm:w-72 sm:shrink-0" />
-          <div className="join flex-none">
-            <button
-              className="btn btn-outline join-item"
-              onClick={() => setViewMode(v => v === 'table' ? 'gallery' : 'table')}
-              title={viewMode === 'table' ? 'Gallery View' : 'Table View'}
-            >
-              <Icon name={viewMode === 'table' ? 'layout-grid' : 'list'} className="h-4 w-4" />
-              <span className="hidden sm:inline">{viewMode === 'table' ? 'Gallery' : 'Table'}</span>
-            </button>
-            {viewMode === 'gallery' && (
+        {/* Summary Cards & Quick Search & View Toggle */}
+        <div className="mb-3 flex flex-col md:flex-row items-center gap-4 animate-slideUp [animation-delay:100ms]">
+          <SummaryCards cards={attendanceCards.map(c => ({ ...c, value: String(c.value) }))} />
+
+          <div className="flex items-center gap-2 justify-end w-full md:w-auto md:ml-auto">
+            <QuickSearch value={q} onChange={setQ} placeholder={t('searchPlaceholder')} className="w-full sm:w-72 sm:shrink-0" />
+            <div className="join flex-none">
               <button
                 className="btn btn-outline join-item"
-                onClick={() => {
-                  if (allExpanded) {
-                    galleryRef.current?.collapseAll();
-                  } else {
-                    galleryRef.current?.expandAll();
-                  }
-                  setAllExpanded(!allExpanded);
-                }}
-                title={allExpanded ? 'Close All' : 'Open All'}
+                onClick={() => setViewMode(v => v === 'table' ? 'gallery' : 'table')}
+                title={viewMode === 'table' ? 'Gallery View' : 'Table View'}
               >
-                <Icon name="chevron-down" className={`h-4 w-4 ${allExpanded ? 'rotate-180' : ''}`} />
-                <span className="hidden sm:inline">{allExpanded ? 'Close' : 'Open'}</span>
+                <Icon name={viewMode === 'table' ? 'layout-grid' : 'list'} className="h-4 w-4" />
+                <span className="hidden sm:inline">{viewMode === 'table' ? 'Gallery' : 'Table'}</span>
               </button>
-            )}
+              {viewMode === 'gallery' && (
+                <button
+                  className="btn btn-outline join-item"
+                  onClick={() => {
+                    if (allExpanded) {
+                      galleryRef.current?.collapseAll();
+                    } else {
+                      galleryRef.current?.expandAll();
+                    }
+                    setAllExpanded(!allExpanded);
+                  }}
+                  title={allExpanded ? 'Close All' : 'Open All'}
+                >
+                  <Icon name="chevron-down" className={`h-4 w-4 ${allExpanded ? 'rotate-180' : ''}`} />
+                  <span className="hidden sm:inline">{allExpanded ? 'Close' : 'Open'}</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
