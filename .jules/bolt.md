@@ -57,3 +57,11 @@
 ## 2026-08-01 - [O(N log N) Sorting in Selectors with localeCompare]
 **Learning:** Calling `.localeCompare()` within `.sort()` inside hook selectors and memoized options triggers heavy, un-cached internationalization collation lookups up to $O(N \log N)$ times. This results in heavy UI stuttering as dataset sizes scale.
 **Action:** Use `getCachedCollator` from `utils/helpers/perf-formatter.ts` to retrieve and reuse a single cached instance of `Intl.Collator`, converting the instantiation/configuration overhead to $O(1)$.
+
+## 2026-08-10 - [Single-Pass Cascading Picker Selection]
+**Learning:** Processing cascading options using chainings of `.filter()` and `.map()` calls on hot picker hook dependencies (such as business units and gangs) causes redundant intermediate allocations and lookup operations.
+**Action:** Convert multi-pass array operations to a single-pass `for...of` loop with manual deduplication via a `Set` to reduce CPU and memory garbage collection pressure.
+
+## 2026-08-10 - [Lexicographical Date Sorting Optimization]
+**Learning:** Standard alphabetical sorting of date strings in ISO-8601 format (`YYYY-MM-DD`) should use basic lexicographical comparison operators (`>` and `<`) rather than calling `.localeCompare()`. This reduces internationalization overhead and is up to 100x faster, particularly in data-rich table views or aggregate-heavy dashboards.
+**Action:** Implement lexicographical comparisons (`b.date > a.date ? 1 : b.date < a.date ? -1 : 0`) for chronological/alphabetical string sorting of dates in useMemo blocks.

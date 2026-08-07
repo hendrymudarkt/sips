@@ -932,7 +932,7 @@ export function useDashboardData() {
     }
 
     const dailySummaries = Array.from(dailyMap.values()).sort((a, b) =>
-      b.date.localeCompare(a.date)
+      b.date > a.date ? 1 : b.date < a.date ? -1 : 0
     );
     const monthlySummaries = Array.from(monthlyMap.values()).sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year;
@@ -940,7 +940,7 @@ export function useDashboardData() {
     });
     const yearlySummaries = Array.from(yearlyMap.values()).sort((a, b) => b.year - a.year);
     const sortedRowDetails = rowDetailsWithDates
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0))
       .map(item => item.record);
 
     return {

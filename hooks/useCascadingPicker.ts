@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSections, fetchGangs } from '@/utils/services/masterDataService';
 import { fetchBusinessUnits } from '@/utils/services/businessUnitService';
-import type { SectionMaster, GangMaster } from '@/utils/services/masterDataService';
 
 export function useCascadingPicker(selFcba?: string, selSection?: string) {
   const { data: businessUnits, isLoading: isLoadingBU } = useQuery({
@@ -13,20 +12,17 @@ export function useCascadingPicker(selFcba?: string, selSection?: string) {
 
   const fcbaOptions = useMemo(() => {
     if (!businessUnits) return [];
+    const result: Array<{ value: string; label: string }> = [];
     const seen = new Set<string>();
-    return businessUnits
-      .filter(b => {
-        const bc = b as Record<string, string>;
-        const code = bc.fcba || bc.fccode;
-        if (!code || seen.has(code)) return false;
+    for (const b of businessUnits) {
+      const bc = b as Record<string, string>;
+      const code = bc.fcba || bc.fccode;
+      if (code && !seen.has(code)) {
         seen.add(code);
-        return true;
-      })
-      .map(b => {
-        const bc = b as Record<string, string>;
-        const code = bc.fcba || bc.fccode;
-        return { value: code, label: code };
-      });
+        result.push({ value: code, label: code });
+      }
+    }
+    return result;
   }, [businessUnits]);
 
   const { data: sections, isLoading: isLoadingSections } = useQuery({
@@ -61,16 +57,16 @@ export function useCascadingPicker(selFcba?: string, selSection?: string) {
 
   const kemandoranOptions = useMemo(() => {
     if (!gangs) return [];
+    const result: Array<{ value: string; label: string }> = [];
     const seen = new Set<string>();
-    return gangs
-      .filter(g => (g as Record<string, string>).kemandoran?.startsWith('MD'))
-      .filter(g => {
-        const k = (g as Record<string, string>).kemandoran;
-        if (seen.has(k)) return false;
+    for (const g of gangs) {
+      const k = (g as Record<string, string>).kemandoran;
+      if (k && k.startsWith('MD') && !seen.has(k)) {
         seen.add(k);
-        return true;
-      })
-      .map(g => ({ value: (g as Record<string, string>).kemandoran, label: (g as Record<string, string>).kemandoran }));
+        result.push({ value: k, label: k });
+      }
+    }
+    return result;
   }, [gangs]);
 
   return {
