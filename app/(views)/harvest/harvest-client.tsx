@@ -733,6 +733,8 @@ export default function HarvestPage() {
                     value={form.tanggal}
                     max={`${getTodayISO()}T23:59`}
                     onChange={e => setForm(s => ({ ...s, tanggal: e.target.value }))}
+                    readOnly={isEditing && !canUpload}
+                    disabled={isEditing && !canUpload}
                     required
                   />
                 </fieldset>
@@ -1087,6 +1089,8 @@ export default function HarvestPage() {
                       value={form.location}
                       onChange={e => setForm(s => ({ ...s, location: e.target.value }))}
                       placeholder="contoh: -2.2893371,118.0399877"
+                      readOnly={isEditing && !canUpload}
+                      disabled={isEditing && !canUpload}
                       required
                     />
 
@@ -1094,7 +1098,7 @@ export default function HarvestPage() {
                       type="button"
                       className={`btn btn-square ${locLoading ? 'btn-disabled' : ''}`}
                       onClick={handleGetLocation}
-                      disabled={locLoading}
+                      disabled={locLoading || (isEditing && !canUpload)}
                     >
                       {locLoading ? <span className="loading loading-spinner loading-xs" /> : '📍'}
                     </button>
@@ -1174,6 +1178,7 @@ export default function HarvestPage() {
                       ref={imgRef}
                       accept="image/*"
                       className="file-input file-input-bordered w-full"
+                      disabled={isEditing && !canUpload}
                       onChange={e => {
                         const file = e.target.files?.[0] || null;
                         if (file && file.size > 4 * 1024 * 1024) {

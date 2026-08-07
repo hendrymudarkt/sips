@@ -582,7 +582,8 @@ export default function PengangkutanPage() {
               type="text"
               className="input input-bordered w-full"
               value={form.nopengangkutan}
-              readOnly
+              onChange={e => setForm(s => ({ ...s, nopengangkutan: e.target.value }))}
+              readOnly={isEditing}
               tabIndex={-1}
               required
             />
@@ -593,7 +594,8 @@ export default function PengangkutanPage() {
               type="text"
               className="input input-bordered w-full"
               value={form.nospb}
-              readOnly
+              onChange={e => setForm(s => ({ ...s, nospb: e.target.value }))}
+              readOnly={isEditing}
               tabIndex={-1}
             />
           </fieldset>
