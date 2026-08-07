@@ -137,15 +137,15 @@ const GalleryCard = memo(function GalleryCard({
     item._timeInDisplay ||
     (item.time_in
       ? item.time_in.includes(' ')
-        ? item.time_in.split(' ')[1]?.slice(0, 5)
-        : item.time_in.slice(0, 5)
+        ? item.time_in.split(' ')[1]?.slice(0, 8)
+        : item.time_in.slice(0, 8)
       : '-');
   const timeOut =
     item._timeOutDisplay ||
     (item.time_out
       ? item.time_out.includes(' ')
-        ? item.time_out.split(' ')[1]?.slice(0, 5)
-        : item.time_out.slice(0, 5)
+        ? item.time_out.split(' ')[1]?.slice(0, 8)
+        : item.time_out.slice(0, 8)
       : '-');
 
   return (

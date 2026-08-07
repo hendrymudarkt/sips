@@ -246,9 +246,15 @@ export default function HarvestPage() {
       {
         name: tH('colTanggal'),
         selector: row => row.tanggal,
-        format: row => formatDateDMY(row.tanggal),
+        format: row => {
+          const d = formatDateDMY(row.tanggal);
+          const time = (row.tanggal || '').includes(' ')
+            ? (row.tanggal.split(' ')[1] || '').slice(0, 8)
+            : '';
+          return time ? `${d} ${time}` : d;
+        },
         sortable: true,
-        width: '100px',
+        width: '150px',
       },
       {
         name: tH('colKaryawan'),
@@ -713,7 +719,7 @@ export default function HarvestPage() {
             <p className="mt-2">{tH('modalLoadingDetail')}</p>
           </div>
         ) : (
-          <div className="col-span-12">
+          <div className="grid grid-cols-12 col-span-12 gap-2">
                 <SectionHeader title={tH('formInfoTitle')} />
 
                 {/* === Row 1: Tanggal + Location chain === */}
@@ -722,10 +728,10 @@ export default function HarvestPage() {
                 <fieldset className="fieldset col-span-12 md:col-span-3">
                   <legend className="fieldset-legend">{tH('formTanggal')}</legend>
                   <input
-                    type="date"
+                    type="datetime-local"
                     className="input input-bordered w-full"
                     value={form.tanggal}
-                    max={getTodayISO()}
+                    max={`${getTodayISO()}T23:59`}
                     onChange={e => setForm(s => ({ ...s, tanggal: e.target.value }))}
                     required
                   />

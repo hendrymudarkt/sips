@@ -151,6 +151,9 @@ const HarvestCard = memo(function HarvestCard({
   const pengangkutanText = item.info_status_pengangkutan || item.status_pengangkutan || '-';
 
   const dateOnly = item._displayDate || (item.tanggal || '').split(' ')[0];
+  const timeOnly = (item.tanggal || '').includes(' ')
+    ? (item.tanggal.split(' ')[1] || '').slice(0, 8)
+    : '';
 
   return (
     <div
@@ -183,7 +186,7 @@ const HarvestCard = memo(function HarvestCard({
               {item.nama_karyawan}
             </div>
             <div className="text-xs text-base-content/60 truncate">{item.kode_karyawan}</div>
-            <div className="text-xs text-base-content/70 mt-0.5">{dateOnly}</div>
+            <div className="text-xs text-base-content/70 mt-0.5">{dateOnly}{timeOnly ? ` · ${timeOnly}` : ''}</div>
             <div className="text-xs text-base-content/70 mt-0.5">
               Kemandoran: <strong>{item.kemandoran || '-'}</strong>
             </div>

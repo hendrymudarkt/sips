@@ -80,7 +80,7 @@ const resolveBusinessUnitName = (
 };
 
 const getMonthDateRange = (isoDate: string) => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate.trim());
   if (!match) return null;
   const year = Number(match[1]);
   const monthIndex = Number(match[2]) - 1;
@@ -96,8 +96,26 @@ const formatDateISOStatic = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
+/**
+ * Convert a tanggal string (from API) into a value compatible with
+ * <input type="datetime-local"> i.e. YYYY-MM-DDTHH:MM.
+ * Accepts "YYYY-MM-DD HH:MM:SS", "YYYY-MM-DDTHH:MM:SS", ISO with Z, or date-only.
+ */
+const formatTanggalForInput = (raw: string | null | undefined): string => {
+  if (!raw) return '';
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  const match = /^(\d{4}-\d{2}-\d{2})[T\s](\d{2}):(\d{2})/.exec(trimmed);
+  if (match) {
+    return `${match[1]}T${match[2]}:${match[3]}`;
+  }
+  const dateOnly = /^(\d{4}-\d{2}-\d{2})/.exec(trimmed);
+  return dateOnly ? dateOnly[1] : '';
+};
+
 const formatDocDate = (isoDate: string) => {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate.trim());
   if (!match) return '';
   return `${match[3]}${match[2]}${match[1].slice(-2)}`;
 };
@@ -912,7 +930,7 @@ export function useHarvestData() {
         setForm({
           id: data.id,
           nodokumen: data.nodokumen || '',
-          tanggal: data.tanggal ? data.tanggal.split(' ')[0] : '',
+          tanggal: formatTanggalForInput(data.tanggal),
           kode_karyawan_mandor1: data.kode_karyawan_mandor1 || '',
           kode_karyawan_mandor_panen: data.kode_karyawan_mandor_panen || '',
           kode_karyawan_kerani: data.kode_karyawan_kerani || '',
@@ -1015,8 +1033,9 @@ export function useHarvestData() {
     queryFn: async () => {
       if (!form.tanggal) return [];
 
+      const tanggalDate = form.tanggal.replace('T', ' ').split(' ')[0];
       const params = new URLSearchParams();
-      params.append('tanggal', form.tanggal);
+      params.append('tanggal', tanggalDate);
 
       if (['KRP', 'MDP', 'KRA', 'MD1', 'AST', 'KSI', 'MGR'].includes(userLevel)) {
         if (homeFcba) params.append('fcba', homeFcba);
@@ -1219,6 +1238,13 @@ export function useHarvestData() {
         formData.append(key, value);
       } else if (key === 'no_ba_exca') {
         // skip
+      } else if (key === 'tanggal' && value) {
+        const tanggal = String(value).trim().replace('T', ' ');
+        const match = /^(\d{4}-\d{2}-\d{2})(?: (\d{2}:\d{2}))?$/.exec(tanggal);
+        formData.append(
+          key,
+          match ? `${match[1]} ${match[2] ? `${match[2]}:00` : '00:00:00'}` : tanggal
+        );
       } else if (value !== null && value !== undefined) {
         formData.append(key, String(value));
       }
@@ -1333,18 +1359,23 @@ export function useHarvestData() {
     );
   };
 
+  const getNowDateTimeLocal = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
   const onAddClick = () => {
     setIsEditing(false);
     setForm({
       ...initialHarvestForm,
-      tanggal: getTodayISO(),
+      tanggal: getNowDateTimeLocal(),
       fcba: userLevel === 'ADM' ? '' : userFcbaCookie || homeFcba || '',
       afdeling:
         userLevel === 'ADM' || userLevel === 'KSI'
           ? ''
           : userAfdelingCookie || homeSection || '',
-    });
-    setPreview('');
+    });    setPreview('');
     setSelFcba(userLevel === 'ADM' ? '' : userFcbaCookie || homeFcba || '');
     setSelSection(
       userLevel === 'ADM' || userLevel === 'KSI'
