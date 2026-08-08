@@ -8,7 +8,6 @@ import { AppDataTable } from '@/app/components/data/app-data-table';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
 import { Icon } from '@/app/components/ui/icons';
-import { ExportButton } from '@/app/components/ui/export-button';
 import { useLocale } from '@/hooks/useLocale';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { getTodayISO, formatDateDMY, getYesterdayISO } from '@/utils/helpers/datetime';
@@ -967,22 +966,11 @@ export default function Open() {
           actions={[
             { key: 'filter', label: showFilters ? t('hideFilters') : t('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
             { key: 'refresh', label: loading ? t('loading') : t('refresh'), icon: 'refresh', onClick: () => fetchData(appliedFilters ?? getScopedFilters(filters)), disabled: loading, loading, variant: 'outline' },
+            { key: 'export', label: t('export'), icon: 'export', onClick: handleExport, variant: 'outline' },
+            { key: 'open', label: submitting ? 'Opening...' : `Open (${selectedRows.length})`, icon: 'eye-view', onClick: handleOpen, disabled: selectedRows.length === 0 || submitting, loading: submitting, variant: 'primary', tour: 'open-button' },
           ]}
         >
           <AppTour steps={tourSteps} storageKey="tour-open-lhm" onStepChange={handleTourStepChange} btnClassName="join-item flex-1 sm:flex-none" />
-          <ExportButton onClick={handleExport} label={t('export')} />
-          <button
-            className="btn btn-primary btn-sm flex-1 sm:flex-none join-item"
-            onClick={handleOpen}
-            disabled={selectedRows.length === 0 || submitting}
-            data-tour="open-button"
-          >
-            {submitting ? (
-              <><span className="loading loading-spinner loading-xs" /><span className="hidden sm:inline">Opening...</span></>
-            ) : (
-              <><Icon name="eye-view" className="h-4 w-4" /><span className="hidden sm:inline">{`Open (${selectedRows.length})`}</span></>
-            )}
-          </button>
         </Toolbar>
 
         {/* Selected info */}

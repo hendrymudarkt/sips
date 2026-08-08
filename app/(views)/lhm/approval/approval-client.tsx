@@ -8,7 +8,6 @@ import { AppDataTable } from '@/app/components/data/app-data-table';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
 import { Icon } from '@/app/components/ui/icons';
-import { ExportButton } from '@/app/components/ui/export-button';
 import { useLocale } from '@/hooks/useLocale';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { getTodayISO, formatDateDMY, getYesterdayISO } from '@/utils/helpers/datetime';
@@ -1054,22 +1053,11 @@ export default function Approval() {
           actions={[
             { key: 'filter', label: showFilters ? tL('hideFilters') : tL('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
             { key: 'refresh', label: loading ? tL('loading') : tL('refresh'), icon: 'refresh', onClick: () => fetchData(appliedFilters ?? getScopedFilters(filters)), disabled: loading, loading, variant: 'outline' },
+            { key: 'export', label: tL('export'), icon: 'export', onClick: handleExport, variant: 'outline' },
+            { key: 'approve', label: submitting ? 'Approving...' : `Approve (${selectedRows.length})`, icon: 'check', onClick: handleApprove, disabled: selectedRows.length === 0 || submitting, loading: submitting, variant: 'primary', tour: 'approve-button' },
           ]}
         >
           <AppTour steps={tourSteps} storageKey="tour-approval-lhm" onStepChange={handleTourStepChange} btnClassName="join-item flex-1 sm:flex-none" />
-          <ExportButton onClick={handleExport} label={tL('export')} />
-          <button
-            className="btn btn-primary btn-sm flex-1 sm:flex-none join-item"
-            onClick={handleApprove}
-            disabled={selectedRows.length === 0 || submitting}
-            data-tour="approve-button"
-          >
-            {submitting ? (
-              <><span className="loading loading-spinner loading-xs" /><span className="hidden sm:inline">Approving...</span></>
-            ) : (
-              <><Icon name="check" className="h-4 w-4" /><span className="hidden sm:inline">{`Approve (${selectedRows.length})`}</span></>
-            )}
-          </button>
         </Toolbar>
 
         {/* Selected info */}
@@ -1108,8 +1096,7 @@ export default function Approval() {
 
         {/* Filter Bar */}
         {showFilters && (
-          <>
-            <FilterBar
+          <FilterBar
             fields={[
               { key: 'fddate', label: 'Tgl Awal', type: 'date', placeholder: tL('filterDateStart') },
               { key: 'fddate_end', label: 'Tgl Akhir', type: 'date', placeholder: tL('filterDateEnd') },
@@ -1117,6 +1104,19 @@ export default function Approval() {
               { key: 'employeecode', label: 'Karyawan', type: 'text', placeholder: tL('filterKaryawan') },
               { key: 'fcba', label: 'FCBA', type: 'text', placeholder: tL('filterFcba'), disabled: isFcbaLocked },
               { key: 'afdeling', label: 'Afdeling', type: 'text', placeholder: tL('filterAfdeling'), disabled: isAfdelingLocked },
+              { key: 'tahuntanam', label: 'Tahun Tanam', type: 'text', placeholder: 'Tahun Tanam' },
+              { key: 'blok', label: 'Blok', type: 'text', placeholder: 'Blok' },
+              { key: 'attendance', label: 'Attendance', type: 'select', placeholder: 'Attendance', options: [
+                { value: '', label: 'Attendance' },
+                { value: 'KJ', label: 'KJ' },
+                { value: 'MK', label: 'MK' },
+                { value: 'WH', label: 'WH' },
+                { value: 'WS', label: 'WS' },
+                { value: 'ML', label: 'ML' },
+                { value: 'P1', label: 'P1' },
+                { value: 'KB', label: 'KB' },
+                { value: 'OT', label: 'OT' },
+              ] },
             ]}
             values={filters}
             onChange={(key, val) => setFilters(s => ({ ...s, [key]: val }))}
@@ -1137,6 +1137,9 @@ export default function Approval() {
                 employeecode: '',
                 fcba: '',
                 afdeling: '',
+                tahuntanam: '',
+                blok: '',
+                attendance: '',
               };
               setFilters(resetFilters);
               setAppliedFilters(resetFilters);
@@ -1146,36 +1149,6 @@ export default function Approval() {
             showApply
             showReset
           />
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-            <input
-              className="input input-bordered w-full"
-              placeholder="Tahun Tanam"
-              value={filters.tahuntanam ?? ''}
-              onChange={e => setFilters(s => ({ ...s, tahuntanam: e.target.value }))}
-              title="Filter berdasarkan tahun tanam"
-            />
-            <input
-              className="input input-bordered w-full"
-              placeholder="Blok"
-              value={filters.blok ?? ''}
-              onChange={e => setFilters(s => ({ ...s, blok: e.target.value }))}
-              title="Filter berdasarkan kode blok"
-            />
-            <select
-              className="select select-bordered w-full"
-              value={filters.attendance ?? ''}
-              onChange={e => setFilters(s => ({ ...s, attendance: e.target.value }))}
-              title="Filter berdasarkan kode attendance"
-            >
-              <option value="">Attendance</option>
-              {['KJ', 'MK', 'WH', 'WS', 'ML', 'P1', 'KB', 'OT'].map(v => (
-                <option key={`att-${v}`} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </div>
-          </>
         )}
 
         {/* Error */}

@@ -8,7 +8,6 @@ import { AppDataTable } from '@/app/components/data/app-data-table';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
 import { Icon } from '@/app/components/ui/icons';
-import { ExportButton } from '@/app/components/ui/export-button';
 import { useLocale } from '@/hooks/useLocale';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { getTodayISO, formatDateDMY, getYesterdayISO } from '@/utils/helpers/datetime';
@@ -913,10 +912,10 @@ export default function Lhm() {
           actions={[
             { key: 'filter', label: showFilters ? tL('hideFilters') : tL('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
             { key: 'refresh', label: loading ? tL('loading') : tL('refresh'), icon: 'refresh', onClick: () => fetchData(appliedFilters ?? getScopedFilters(filters)), disabled: loading, loading, variant: 'outline' },
+            { key: 'export', label: tL('export'), icon: 'export', onClick: handleExport, variant: 'outline' },
           ]}
         >
           <AppTour steps={tourSteps} storageKey="tour-lhm" onStepChange={handleTourStepChange} />
-          <ExportButton onClick={handleExport} label={tL('export')} />
         </Toolbar>
 
         {/* Quick Search + Total Cards */}
