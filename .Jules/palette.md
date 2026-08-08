@@ -90,3 +90,8 @@
 **Learning:** Pure CSS dropdown components (like DaisyUI's `dropdown-end`) often lack keyboard support and stay "sticky" when options inside are clicked, which degrades accessibility and user experience. Upgrading the trigger to a semantic HTML `<button type="button">`, pairing it with an `Escape` key listener that blurs `document.activeElement` and returns focus to the trigger, and programmatically blurring the focused element upon selecting dropdown options provides an incredibly fluid, accessible, and delightful interactive experience.
 
 **Action:** Always prefer native `<button>` elements for DaisyUI dropdown triggers. Provide robust keyboard dismissal with `Escape` that returns focus to the trigger, and programmatically blur the active element on dropdown selection to immediately collapse the persistent CSS-only dropdown menu.
+
+## 2026-04-10 - [Asynchronous Focus Restoration on Modal Unmount]
+**Learning:** When executing focus restoration to a previously active element during a React component's unmount phase, synchronous calls to `.focus()` inside the cleanup function can fail or suffer from race conditions. This happens because the browser's focus engine and React's DOM-removal batching may still be updating the active layout. Delaying the focus execution slightly via `setTimeout(..., 0)` guarantees that the DOM has settled, resulting in a reliable focus transition for screen readers and keyboard navigation.
+
+**Action:** When cleaning up active elements in unmount side-effects, always schedule the `.focus()` restoration inside a `setTimeout(..., 0)` block to ensure the layout has completely updated.

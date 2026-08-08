@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { cookieStore } from '@/utils/auth/cookieStore';
 
 interface JsonRecord {
@@ -46,8 +46,19 @@ interface Props {
 
 type Phase = 'idle' | 'preview' | 'importing' | 'done';
 
+/**
+ * 🎨 Palette Micro-UX Enhancement: HarvestJsonUploadModal
+ * - Standardized dialog attributes (role="dialog", aria-modal="true", aria-labelledby="harvest-json-upload-title")
+ * - Focus capture and restoration (saves document.activeElement and returns focus to it on close)
+ * - Automatic close button focusing upon modal render
+ * - Escape key dismissal support (guarded against active loaders/importing state)
+ * - Accessible label/hint linkages on file inputs
+ * - Explicit focus rings for visible keyboard navigation
+ */
 export default function HarvestJsonUploadModal({ open, onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [records, setRecords] = useState<JsonRecord[]>([]);
@@ -60,6 +71,47 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
   const userLevel = useMemo(() => cookieStore.getLevel(), []);
   const isAdmin = userLevel === 'ADM';
   const allowed = userLevel === 'ADM';
+
+  const handleClose = useCallback(() => {
+    setPhase('idle');
+    setRecords([]);
+    setParseError(null);
+    setFcbaError(null);
+    setProgress(null);
+    setResult(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    onClose();
+  }, [onClose]);
+
+  // Capture previous active element and auto-focus on close button
+  useEffect(() => {
+    if (open && allowed) {
+      previousActiveElementRef.current = document.activeElement as HTMLElement;
+      const timer = setTimeout(() => {
+        closeButtonRef.current?.focus();
+      }, 50);
+
+      return () => {
+        clearTimeout(timer);
+        // Delay slightly to prevent focus racing
+        setTimeout(() => {
+          previousActiveElementRef.current?.focus();
+        }, 0);
+      };
+    }
+  }, [open, allowed]);
+
+  // Escape key handler
+  useEffect(() => {
+    if (!open || !allowed) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && phase !== 'importing') {
+        handleClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, allowed, phase, handleClose]);
 
   const handleFileSelect = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,7 +155,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
 
       setRecords(data as JsonRecord[]);
       setPhase('preview');
-    } catch (err) {
+    } catch {
       setParseError('File tidak valid. Pastikan file berformat JSON yang benar.');
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
@@ -191,31 +243,27 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
     setPhase('done');
   }, [records]);
 
-  const handleClose = useCallback(() => {
-    setPhase('idle');
-    setRecords([]);
-    setParseError(null);
-    setFcbaError(null);
-    setProgress(null);
-    setResult(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    onClose();
-  }, [onClose]);
-
   if (!open || !allowed) return null;
 
   return (
-    <div className="modal modal-open">
+    <div
+      className="modal modal-open"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="harvest-json-upload-title"
+    >
       <div className="modal-box max-w-[calc(100vw-1rem)] sm:max-w-5xl mx-2 sm:mx-0 p-2 sm:p-6">
         {/* Header */}
         <div className="sticky top-0 z-10 bg-base-100 pb-2 -mx-2 sm:-mx-6 px-2 sm:px-6 border-b border-base-300">
           <div className="flex items-start justify-between">
-            <h3 className="font-bold text-lg">Upload JSON Harvesting</h3>
+            <h3 id="harvest-json-upload-title" className="font-bold text-lg">Upload JSON Harvesting</h3>
             <button
+              ref={closeButtonRef}
               type="button"
-              className="btn btn-sm btn-circle btn-ghost"
+              className="btn btn-sm btn-circle btn-ghost focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
               onClick={handleClose}
               disabled={phase === 'importing'}
+              aria-label="Tutup upload JSON"
             >
               ✕
             </button>
@@ -227,23 +275,26 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
           {phase === 'idle' && (
             <div className="flex flex-col items-center gap-4 py-8">
               <div className="text-base-content/60 text-center">
-                <p className="text-lg font-medium mb-2">Pilih file JSON</p>
-                <p className="text-sm">File harus berformat .json dengan data harvesting</p>
+                <p id="json-upload-label" className="text-lg font-medium mb-2">Pilih file JSON</p>
+                <p id="json-upload-hint" className="text-sm">File harus berformat .json dengan data harvesting</p>
               </div>
               <input
                 ref={fileInputRef}
+                id="harvest-json-file"
                 type="file"
                 accept=".json"
-                className="file-input file-input-bordered w-full max-w-md"
+                className="file-input file-input-bordered w-full max-w-md focus:border-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 onChange={handleFileSelect}
+                aria-labelledby="json-upload-label"
+                aria-describedby="json-upload-hint"
               />
               {parseError && (
-                <div className="alert alert-error shadow-sm max-w-md">
+                <div className="alert alert-error shadow-sm max-w-md" role="alert">
                   <p>{parseError}</p>
                 </div>
               )}
               {fcbaError && (
-                <div className="alert alert-error shadow-sm max-w-md">
+                <div className="alert alert-error shadow-sm max-w-md" role="alert">
                   <p>{fcbaError}</p>
                 </div>
               )}
@@ -267,7 +318,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    className="btn btn-sm btn-ghost"
+                    className="btn btn-sm btn-ghost focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                     onClick={() => {
                       setPhase('idle');
                       setRecords([]);
@@ -278,7 +329,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
                   </button>
                   <button
                     type="button"
-                    className="btn btn-sm btn-primary"
+                    className="btn btn-sm btn-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                     onClick={handleImport}
                   >
                     Import {records.length} Data
@@ -287,7 +338,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
               </div>
 
               {records.length > 10000 && (
-                <div className="alert alert-error shadow-sm text-sm">
+                <div className="alert alert-error shadow-sm text-sm" role="alert">
                   🔴 File sangat besar ({records.length} records). Preview tidak ditampilkan.
                   Import akan diproses dalam {Math.ceil(records.length / 500)} batch.
                   <br />Pastikan koneksi stabil dan jangan tutup halaman sampai selesai.
@@ -395,19 +446,19 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
             <div className="space-y-4">
               <div className="flex gap-4 items-center">
                 {result.failed.length === 0 ? (
-                  <div className="alert alert-success shadow-sm flex-1">
+                  <div className="alert alert-success shadow-sm flex-1" role="alert">
                     <p className="font-semibold">
                       ✅ Semua {result.success.length} data berhasil diimport!
                     </p>
                   </div>
                 ) : result.success.length === 0 ? (
-                  <div className="alert alert-error shadow-sm flex-1">
+                  <div className="alert alert-error shadow-sm flex-1" role="alert">
                     <p className="font-semibold">
                       ❌ Semua {result.failed.length} data gagal diimport.
                     </p>
                   </div>
                 ) : (
-                  <div className="alert alert-warning shadow-sm flex-1">
+                  <div className="alert alert-warning shadow-sm flex-1" role="alert">
                     <p className="font-semibold">
                       ⚠️  {result.success.length} berhasil, {result.failed.length} gagal.
                     </p>
@@ -470,7 +521,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
             {phase === 'preview' && (
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn btn-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 onClick={() => {
                   setPhase('idle');
                   setRecords([]);
@@ -483,7 +534,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
             {(phase === 'done' || phase === 'idle') && (
               <button
                 type="button"
-                className="btn btn-sm"
+                className="btn btn-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 onClick={handleClose}
               >
                 Tutup
@@ -492,7 +543,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
             {phase === 'importing' && (
               <button
                 type="button"
-                className="btn btn-sm btn-disabled"
+                className="btn btn-sm btn-disabled focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                 disabled
               >
                 <span className="loading loading-spinner loading-xs" />
@@ -502,7 +553,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
           </div>
         </div>
       </div>
-      <div className="modal-backdrop" onClick={phase !== 'importing' ? handleClose : undefined} />
+      <div className="modal-backdrop bg-black/40 backdrop-blur-[2px]" onClick={phase !== 'importing' ? handleClose : undefined} />
     </div>
   );
 }
