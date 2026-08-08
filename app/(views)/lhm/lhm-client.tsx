@@ -920,7 +920,7 @@ export default function Lhm() {
         </Toolbar>
 
         {/* Quick Search + Total Cards */}
-        <div className="mb-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 animate-slideUp [animation-delay:100ms]">
+        <div className="mb-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 animate-slideUp [animation-delay:100ms]">
           {/* Total Cards */}
           <div data-tour="total-cards">
             <SummaryCards cards={totalCards.map(c => ({ ...c, value: formatPerfNumber(String(c.value), localeTag) }))} />
@@ -929,7 +929,7 @@ export default function Lhm() {
             value={q}
             onChange={setQ}
             placeholder={tL('searchPlaceholder')}
-            className="w-full sm:w-72"
+            className="w-full sm:w-72 sm:ml-auto"
           />
         </div>
 

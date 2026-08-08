@@ -321,10 +321,10 @@ export default function UsersClient() {
           <FilterBar
             fields={[
               { key: 'fcba', label: 'FCBA', type: 'search-select', options: scopedFcbaOptions, disabled: isFcbaRestricted, placeholder: 'FCBA' },
-              { key: 'afdeling', label: t('afdeling'), type: 'search-select', options: afdelingFilterOptions, placeholder: t('afdeling') },
-              { key: 'gangcode', label: t('gangcode'), type: 'search-select', options: gangcodeFilterOptions, placeholder: t('gangcode') },
-              { key: 'level', label: t('level'), type: 'search-select', options: visibleLevelOptions, placeholder: t('level') },
-              { key: 'position', label: t('position'), type: 'search-select', options: visiblePositionOptions, placeholder: t('position') },
+              { key: 'afdeling', label: t('afdeling'), type: 'search-select', options: [{ value: '', label: t('filterAll') }, ...afdelingFilterOptions], placeholder: t('afdeling') },
+              { key: 'gangcode', label: t('gangcode'), type: 'search-select', options: [{ value: '', label: t('filterAll') }, ...gangcodeFilterOptions], placeholder: t('gangcode') },
+              { key: 'level', label: t('level'), type: 'search-select', options: [{ value: '', label: t('filterAll') }, ...visibleLevelOptions], placeholder: t('level') },
+              { key: 'position', label: t('position'), type: 'search-select', options: [{ value: '', label: t('filterAll') }, ...visiblePositionOptions], placeholder: t('position') },
             ]}
             values={filters}
             onChange={(key, value) => {
@@ -518,6 +518,7 @@ export default function UsersClient() {
             </button>
             <button
               type="submit"
+              form="modal-form"
               className="btn btn-secondary btn-sm"
               disabled={bulkLoading}
             >

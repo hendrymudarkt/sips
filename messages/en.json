@@ -924,6 +924,7 @@
     "position": "Position",
     "afdeling": "Afdeling",
     "gangcode": "Gang Code",
+    "filterAll": "All",
     "idkaryawan": "Employee ID",
     "status": "Status",
     "active": "Active",
