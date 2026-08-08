@@ -799,7 +799,7 @@ export default function HarvestPage() {
                 {/* === Row 1: Tanggal + Location chain === */}
 
                 {/* Tanggal */}
-                <fieldset className="fieldset col-span-12 md:col-span-3">
+                <fieldset className="fieldset col-span-6 md:col-span-2">
                   <legend className="fieldset-legend">{tH('formTanggal')}</legend>
                   <input
                     type="date"
@@ -807,6 +807,19 @@ export default function HarvestPage() {
                     value={form.tanggal}
                     max={getTodayISO()}
                     onChange={e => setForm(s => ({ ...s, tanggal: e.target.value }))}
+                    required
+                  />
+                </fieldset>
+
+                {/* Waktu */}
+                <fieldset className="fieldset col-span-6 md:col-span-2">
+                  <legend className="fieldset-legend">{tH('formWaktu')}</legend>
+                  <input
+                    type="time"
+                    step="1"
+                    className="input input-bordered w-full"
+                    value={form.waktu}
+                    onChange={e => setForm(s => ({ ...s, waktu: e.target.value }))}
                     required
                   />
                 </fieldset>

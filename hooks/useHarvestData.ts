@@ -96,6 +96,14 @@ const formatDateISOStatic = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
+const getCurrentTimeISO = () => {
+  const d = new Date();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${hh}:${mm}:${ss}`;
+};
+
 const formatDocDate = (isoDate: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(isoDate);
   if (!match) return '';
@@ -905,6 +913,7 @@ export function useHarvestData() {
           id: data.id,
           nodokumen: data.nodokumen || '',
           tanggal: data.tanggal ? data.tanggal.split(' ')[0] : '',
+          waktu: data.tanggal ? (data.tanggal.split(' ')[1] || '') : '',
           kode_karyawan_mandor1: data.kode_karyawan_mandor1 || '',
           kode_karyawan_mandor_panen: data.kode_karyawan_mandor_panen || '',
           kode_karyawan_kerani: data.kode_karyawan_kerani || '',
@@ -1175,6 +1184,7 @@ export function useHarvestData() {
 
     const requiredFields: { value: string; label: string }[] = [
       { value: form.tanggal, label: tH('formTanggal') },
+      { value: form.waktu, label: tH('formWaktu') },
       { value: form.kode_karyawan, label: tH('formKaryawan') },
       { value: form.fcba, label: tH('formFcba') },
       { value: form.afdeling, label: tH('formAfdeling') },
@@ -1213,10 +1223,16 @@ export function useHarvestData() {
         formData.append(key, value);
       } else if (key === 'no_ba_exca') {
         // skip
+      } else if (key === 'waktu') {
+        // skip, waktu digabung ke tanggal
       } else if (value !== null && value !== undefined) {
         formData.append(key, String(value));
       }
     });
+
+    const waktu = (form.waktu || '00:00:00').trim();
+    const waktuNormalized = waktu.length === 5 ? `${waktu}:00` : waktu;
+    formData.set('tanggal', `${form.tanggal} ${waktuNormalized}`);
 
     const url = isEditing && form.id ? `/api/harvest/${form.id}` : '/api/harvest';
     const method = isEditing && form.id ? 'PUT' : 'POST';
@@ -1332,6 +1348,7 @@ export function useHarvestData() {
     setForm({
       ...initialHarvestForm,
       tanggal: getTodayISO(),
+      waktu: getCurrentTimeISO(),
       fcba: userLevel === 'ADM' ? '' : userFcbaCookie || homeFcba || '',
       afdeling:
         userLevel === 'ADM' || userLevel === 'KSI'

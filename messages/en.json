@@ -445,6 +445,7 @@
     "formTanggal": "Date *",
     "formTangkaiPanjang": "Long Stalk",
     "formTph": "TPH *",
+    "formWaktu": "Time *",
     "gpsDefaultLabel": "GMaps",
     "gpsOpenGeo": "Open in Geo Sips",
     "gpsOpenMaps": "Open in Google Maps",

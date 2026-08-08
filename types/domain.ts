@@ -202,6 +202,7 @@ export type HarvestFormState = {
   id?: string;
   nodokumen: string;
   tanggal: string;
+  waktu: string;
   kode_karyawan_mandor1: string;
   kode_karyawan_mandor_panen: string;
   kode_karyawan_kerani: string;
@@ -236,6 +237,7 @@ export type HarvestFormState = {
 export const initialHarvestForm: HarvestFormState = {
   nodokumen: '',
   tanggal: '',
+  waktu: '',
   kode_karyawan_mandor1: '',
   kode_karyawan_mandor_panen: '',
   kode_karyawan_kerani: '',
