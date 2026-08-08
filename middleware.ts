@@ -80,6 +80,7 @@ export function middleware(request: NextRequest) {
   const gisOrigin = process.env.NEXT_PUBLIC_GIS_URL
     ? new URL(process.env.NEXT_PUBLIC_GIS_URL).origin
     : '';
+  const gisOriginHttps = gisOrigin ? gisOrigin.replace('http://', 'https://') : '';
 
   const csp = [
     "default-src 'self'",
@@ -88,7 +89,7 @@ export function middleware(request: NextRequest) {
     `img-src 'self' data: blob: https://img.daisyui.com ${backendOriginHttps}`.trim(),
     `font-src 'self' data:`,
     `connect-src 'self'${siteOrigin ? ` ${siteOrigin}` : ''} ${backendOrigin} ${backendOriginHttps}`.trim(),
-    "frame-src https://vercel.live",
+    `frame-src https://vercel.live${gisOrigin ? ` ${gisOrigin}${gisOriginHttps && gisOriginHttps !== gisOrigin ? ` ${gisOriginHttps}` : ''}` : ''}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     `form-action 'self' https://www.google.com${gisOrigin ? ` ${gisOrigin}` : ''}${siteOrigin ? ` ${siteOrigin}` : ''}`,

@@ -12,7 +12,6 @@ import { Icon } from '@/app/components/ui/icons';
 import { SearchSelect } from '@/app/components/ui/search-select';
 import { FilterBar } from '@/app/components/ui/filter-bar';
 import { Toolbar } from '@/app/components/ui/toolbar';
-import { env } from '@/lib/env';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
 import { DeleteModal } from '@/app/components/feedback/delete-modal';
@@ -63,9 +62,7 @@ const LocationButton: React.FC<{
   if (!loc) return <span className="text-gray-400">-</span>;
   const googleUrl = buildMapUrl(loc);
 
-  const geoSipsUrl = env.NEXT_PUBLIC_GIS_URL
-    ? `${env.NEXT_PUBLIC_GIS_URL}?${new URLSearchParams({ dateFrom: formatDateISO(new Date(tanggal || '')) || '', dateTo: formatDateISO(new Date(tanggal || '')) || '', nodokumen: nodokumen || '' }).toString()}`
-    : '';
+  const geoSipsUrl = `/cek-doket?${new URLSearchParams({ dateFrom: formatDateISO(new Date(tanggal || '')) || '', dateTo: formatDateISO(new Date(tanggal || '')) || '', nodokumen: nodokumen || '' }).toString()}`;
 
   return (
     <div className="flex gap-1">
