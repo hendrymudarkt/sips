@@ -57,6 +57,13 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
+  // Answer OPTIONS (e.g. the Vercel Feedback widget preflight) with 204 instead
+  // of letting Next return 400/405 for page routes. Keep /api preflights in the
+  // CORS block below so allowed origins get the access-control headers.
+  if (request.method === 'OPTIONS' && !pathname.startsWith('/api/')) {
+    return new NextResponse(null, { status: 204 });
+  }
+
   setDefaultLocale(response, request);
 
   // Set CSRF token for all requests (if not already set)
