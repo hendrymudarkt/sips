@@ -17,9 +17,10 @@ const backendOriginHttps = backendOrigin ? backendOrigin.replace('http://', 'htt
 const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL
   ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
   : '';
-const gisOrigin = process.env.NEXT_PUBLIC_GIS_URL
-  ? new URL(process.env.NEXT_PUBLIC_GIS_URL).origin
+const gisUrl = process.env.NEXT_PUBLIC_GIS_URL
+  ? process.env.NEXT_PUBLIC_GIS_URL.replace(/\/$/, '')
   : '';
+const gisOrigin = gisUrl ? new URL(gisUrl).origin : '';
 
 const cspDirectives = [
   "default-src 'self'",
@@ -182,6 +183,18 @@ const nextConfig: NextConfig = {
 
   compress: true,
   // Keep default ETag generation enabled for conditional caching.
+
+  // Proxy the HTTP-only GIS app through our HTTPS origin so browsers on Vercel
+  // don't block it as mixed content.
+  async rewrites() {
+    if (!gisUrl) return [];
+    return [
+      {
+        source: '/gis/:path*',
+        destination: `${gisUrl}/:path*`,
+      },
+    ];
+  },
 };
 
 const serwistNextConfig = withSerwist({
