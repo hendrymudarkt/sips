@@ -89,7 +89,7 @@ export function middleware(request: NextRequest) {
     `img-src 'self' data: blob: https://img.daisyui.com ${backendOriginHttps}`.trim(),
     `font-src 'self' data:`,
     `connect-src 'self'${siteOrigin ? ` ${siteOrigin}` : ''} ${backendOrigin} ${backendOriginHttps}`.trim(),
-    `frame-src https://vercel.live${gisOrigin ? ` ${gisOrigin}${gisOriginHttps && gisOriginHttps !== gisOrigin ? ` ${gisOriginHttps}` : ''}` : ''}`,
+    `frame-src 'self' https://vercel.live${gisOrigin ? ` ${gisOrigin}${gisOriginHttps && gisOriginHttps !== gisOrigin ? ` ${gisOriginHttps}` : ''}` : ''}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     `form-action 'self' https://www.google.com${gisOrigin ? ` ${gisOrigin}` : ''}${siteOrigin ? ` ${siteOrigin}` : ''}`,

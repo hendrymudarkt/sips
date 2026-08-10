@@ -8,7 +8,7 @@ import { buildMapUrl } from '@/utils/services/mapHelper';
 import { Icon, type IconName } from '@/app/components/ui/icons';
 import { useTranslations } from 'next-intl';
 import { isSafeHref } from '@/lib/utils/inputSanitizer';
-import { env } from '@/lib/env';
+
 
 type HarvestItem = {
   _rowKey?: string;
@@ -273,7 +273,7 @@ const HarvestCard = memo(function HarvestCard({
                       GMaps
                     </a>
                     <a
-                      href={`${env.NEXT_PUBLIC_GIS_URL}?${new URLSearchParams({ dateFrom: (item.tanggal || '').split(' ')[0], dateTo: (item.tanggal || '').split(' ')[0], nodokumen: item.nodokumen || '' }).toString()}`}
+                      href={`/gis?${new URLSearchParams({ dateFrom: (item.tanggal || '').split(' ')[0], dateTo: (item.tanggal || '').split(' ')[0], nodokumen: item.nodokumen || '' }).toString()}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="link link-info text-xs flex items-center gap-1"

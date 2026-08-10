@@ -30,7 +30,7 @@ const cspDirectives = [
   // HTTPS origins listed as fallback if proxy edge case fails.
   `img-src 'self' data: blob: https://img.daisyui.com ${backendOriginHttps}`.trim(),
   `connect-src 'self'${siteOrigin ? ` ${siteOrigin}` : ''} ${backendOrigin} ${backendOriginHttps}`.trim(),
-  "frame-src https://vercel.live",
+  "frame-src 'self' https://vercel.live",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   `form-action 'self' https://www.google.com${gisOrigin ? ` ${gisOrigin}` : ''}${siteOrigin ? ` ${siteOrigin}` : ''}`,
