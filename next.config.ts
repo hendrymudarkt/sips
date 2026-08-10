@@ -17,10 +17,9 @@ const backendOriginHttps = backendOrigin ? backendOrigin.replace('http://', 'htt
 const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL
   ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
   : '';
-const gisUrl = process.env.NEXT_PUBLIC_GIS_URL
-  ? process.env.NEXT_PUBLIC_GIS_URL.replace(/\/$/, '')
+const gisOrigin = process.env.NEXT_PUBLIC_GIS_URL
+  ? new URL(process.env.NEXT_PUBLIC_GIS_URL).origin
   : '';
-const gisOrigin = gisUrl ? new URL(gisUrl).origin : '';
 
 const cspDirectives = [
   "default-src 'self'",
@@ -68,6 +67,26 @@ const securityHeaders = [
   {
     key: 'Permissions-Policy',
     value: 'camera=(), microphone=(), geolocation=(), payment=()',
+  },
+];
+
+// Relaxed CSP for the /gis proxy page (embedded GIS app, must allow framing
+// from this origin and reach its public tile server).
+const gisCspHeaders = [
+  {
+    key: 'Content-Security-Policy',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://tiles.openfreemap.org",
+      "font-src 'self' data:",
+      "connect-src 'self' blob: https://tiles.openfreemap.org",
+      "worker-src 'self' blob:",
+      "frame-ancestors 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; '),
   },
 ];
 
@@ -139,6 +158,17 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
+        // The /gis proxy embeds a third-party (HTTP-only) GIS app inside an
+        // iframe on this same origin, so it must not carry the site-wide
+        // frame-ancestors 'none' CSP, and it needs to reach its tile server.
+        source: '/gis',
+        headers: gisCspHeaders,
+      },
+      {
+        source: '/gis/:path*',
+        headers: gisCspHeaders,
+      },
+      {
         // Cache Next.js static assets for one year.
         source: '/_next/static/:path*',
         headers: [
@@ -183,18 +213,6 @@ const nextConfig: NextConfig = {
 
   compress: true,
   // Keep default ETag generation enabled for conditional caching.
-
-  // Proxy the HTTP-only GIS app through our HTTPS origin so browsers on Vercel
-  // don't block it as mixed content.
-  async rewrites() {
-    if (!gisUrl) return [];
-    return [
-      {
-        source: '/gis/:path*',
-        destination: `${gisUrl}/:path*`,
-      },
-    ];
-  },
 };
 
 const serwistNextConfig = withSerwist({

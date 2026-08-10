@@ -196,7 +196,9 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next|api/health|.*\\.(?:png|jpg|jpeg|svg|webp|avif|gif|ico|css|js|mjs|woff2?|ttf|otf)).*)',
+    // /gis is the GIS proxy (route handler); keep it out of middleware so it
+    // is not login-redirected and gets no frame-ancestors CSP.
+    '/((?!_next|api/health|gis(?:/.*)?|.*\\.(?:png|jpg|jpeg|svg|webp|avif|gif|ico|css|js|mjs|woff2?|ttf|otf)).*)',
   ],
 };
 
