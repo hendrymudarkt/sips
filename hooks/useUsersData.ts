@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import { useTranslations } from 'next-intl';
 import type { Option } from '@/app/components/ui/search-select';
 import { useSearchShortcut } from '@/hooks/useSearchShortcut';
+import { useLocale } from '@/hooks/useLocale';
+import { getCachedCollator } from '@/utils/helpers/perf-formatter';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { extractArrayData, extractSingleData } from '@/utils/api/apiHelpers';
 import { fetchGangs, fetchSections } from '@/utils/services/masterDataService';
@@ -26,6 +28,7 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
   const t = useTranslations('Users');
   const queryClient = useQueryClient();
   const searchInputRef = useSearchShortcut();
+  const localeTag = useLocale();
   const [q, setQ] = useState(initialQ);
   const [filters, setFilters] = useState<UserFilters>(initialFilters);
   const [appliedFilters, setAppliedFilters] = useState<UserFilters>(initialFilters);
@@ -93,14 +96,15 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
       });
 
       const toOption = (v: string) => ({ value: v, label: v });
-      const sorter = (a: Option, b: Option) => a.label.localeCompare(b.label);
+      const collator = getCachedCollator(localeTag);
+      const sorter = (a: Option, b: Option) => collator.compare(a.label, b.label);
 
       return {
         enrichedUsers: enriched,
         afdelingFilterOptions: Array.from(afdSet).map(toOption).sort(sorter),
         gangcodeFilterOptions: Array.from(gangSet).map(toOption).sort(sorter),
       };
-    }, [users]);
+    }, [users, localeTag]);
 
   const [selFcba, setSelFcba] = useState('');
   const [selAfdeling, setSelAfdeling] = useState('');
@@ -210,12 +214,13 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     queryFn: async () => {
       if (!bulkFcba) return [];
       const rows = await fetchSections({ fcba: bulkFcba });
+      const collator = getCachedCollator(localeTag);
       return rows
         .map(s => ({
           value: s.fccode,
           label: s.fcname && s.fcname !== s.fccode ? `${s.fccode} - ${s.fcname}` : s.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     },
     enabled: !!bulkFcba,
     staleTime: 30 * 60 * 1000,
@@ -227,12 +232,13 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     queryFn: async () => {
       if (!bulkFcba || !bulkAfdeling) return [];
       const rows = await fetchGangs({ fcba: bulkFcba, afdeling: bulkAfdeling });
+      const collator = getCachedCollator(localeTag);
       return rows
         .map(g => ({
           value: g.fccode,
           label: g.fcname && g.fcname !== g.fccode ? `${g.fccode} - ${g.fcname}` : g.fccode,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .sort((a, b) => collator.compare(a.label, b.label));
     },
     enabled: !!bulkFcba && !!bulkAfdeling,
     staleTime: 30 * 60 * 1000,

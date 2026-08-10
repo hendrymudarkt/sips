@@ -49,3 +49,7 @@
 ## 2025-06-30 - [O(N) Render-path Lookup in Harvest]
 **Learning:** Performing repeated O(N) array scans (like `.find()`) inside event handlers or render loops for large datasets (like employees or TPH) causes noticeable input lag.
 **Action:** Pre-calculate a `Map` using `useMemo` for O(1) constant-time lookups. This ensures immediate UI responsiveness even as the dataset grows.
+
+## 2026-06-30 - [Intl Collator Caching in Users Page]
+**Learning:** Calling `localeCompare` inside React render passes and list-processing sequences (such as sorting options in cascading selects or filter options) introduces substantial CPU overhead by dynamically reinstantiating standard internationalization collation rules on every comparison step.
+**Action:** Utilize the cached `Intl.Collator` instance through `getCachedCollator(localeTag)` for all locale-sensitive sorting operations. This prevents resource allocation churn and keeps list sorting lightning-fast and responsive.
