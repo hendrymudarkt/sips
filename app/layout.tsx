@@ -12,7 +12,7 @@ const geistSans = Geist({
   variable: '--font-geist-sans',
   subsets: ['latin'],
   display: 'swap',
-  preload: true,
+  preload: false,
   adjustFontFallback: false,
   fallback: ['system-ui', 'sans-serif'],
 });
