@@ -55,3 +55,8 @@
 **Learning:** Standardizing unauthorized access states with a localized, visual-first component improves both accessibility for multi-lingual users and the overall professional feel of the application. Pairing technical messages with recognizable visual icons (like a pulsing lock) aids immediate recognition even before the text is read.
 
 **Action:** Use the `Common` translation namespace for global application states. Always pair high-impact feedback (like Access Denied) with thematic icons and entry animations to provide clear, delightful interactive feedback.
+
+## 2026-03-12 - [Accessible Reusable ConfirmModal UX Pattern]
+**Learning:** Generic overlays like `ConfirmModal` are heavily utilized across multiple pages for critical confirmations. Hardening them with proper focus restoration, key listeners for `Escape` dismissal, proper linking of `aria-labelledby` and `aria-describedby` to semantic elements, and explicit focus-visible borders significantly enhances keyboard navigation and screen reader interactions seamlessly.
+
+**Action:** Always include keyboard event listeners (`Escape`) on critical dialog overlays and manage focus transitions by shifting focus to the cancel option upon open and programmatically restoring focus to the initiator button upon cleanup.
