@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { parseJsonSafe } from '@/lib/api/apiProxy';
 import { validateSecurity } from '@/lib/auth/security';
@@ -15,9 +16,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Unauthenticated' }, { status: 401 });
   }
 
+  const jar = await cookies();
+  const userId = jar.get('log_id')?.value;
+  if (!userId) {
+    return NextResponse.json({ ok: false, error: 'User id missing' }, { status: 400 });
+  }
+
   const form = await req.formData();
 
-  const upstream = await fetch(`${BACKEND_URL}/api/user/photo`, {
+  const upstream = await fetch(`${BACKEND_URL}/api/user/${encodeURIComponent(userId)}/photo`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,

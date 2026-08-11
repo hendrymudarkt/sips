@@ -84,6 +84,27 @@ function validatePasswordLength(password: string, message: string, minLength = 8
   return null;
 }
 
+function extractProfileData(d: unknown): Record<string, unknown> {
+  if (!d || typeof d !== 'object') return {};
+  const obj = d as Record<string, unknown>;
+  if (obj.data && typeof obj.data === 'object') return obj.data as Record<string, unknown>;
+  return obj;
+}
+
+function extractPhotoUrl(d: unknown): string {
+  if (typeof d === 'string') return d;
+  if (!d || typeof d !== 'object') return '';
+  const obj = d as Record<string, unknown>;
+  if (typeof obj.photo === 'string') return obj.photo;
+  if (typeof obj.data === 'string') return obj.data;
+  if (obj.data && typeof obj.data === 'object') {
+    const inner = obj.data as Record<string, unknown>;
+    if (typeof inner.photo === 'string') return inner.photo;
+    if (typeof inner.data === 'string') return inner.data;
+  }
+  return '';
+}
+
 // --- Custom Hook (SRP: enkapsulasi form logic) --------------------------------
 
 function useChangePassword() {
@@ -489,10 +510,11 @@ export default function ChangePasswordPage({ profile }: ChangePasswordPageProps)
       const json: Record<string, unknown> = await res.json();
       if (!res.ok || !json.ok) throw new Error(String(json.message ?? json.error ?? 'Failed to update profile'));
 
-      const profileData = (json.data as Record<string, unknown>)?.data as Record<string, unknown> | undefined;
-      const newFullname = (profileData?.fullname as string) || editProfileForm.fullname;
+      const profileData = extractProfileData(json.data);
+      const newFullname = (profileData.fullname as string) || editProfileForm.fullname;
       cookieStore.setCookie('user_FullName', newFullname);
 
+      let photoUrl = '';
       if (editProfilePhoto) {
         const fd = new FormData();
         fd.append('photo', editProfilePhoto);
@@ -504,18 +526,25 @@ export default function ChangePasswordPage({ profile }: ChangePasswordPageProps)
         const photoJson: Record<string, unknown> = await photoRes.json();
         if (!photoRes.ok || !photoJson.ok) throw new Error(String(photoJson.message ?? 'Photo upload failed'));
 
-        const pd = photoJson.data;
-        const photoUrl = typeof pd === 'string' ? pd : (pd as Record<string, unknown>)?.data ?? '';
+        photoUrl = extractPhotoUrl(photoJson.data);
         if (photoUrl) {
-          cookieStore.setCookie('user_Photo', String(photoUrl));
+          cookieStore.setCookie('user_Photo', photoUrl);
         }
-      } else if (profileData?.photo) {
+      } else if (profileData.photo) {
         cookieStore.setCookie('user_Photo', String(profileData.photo));
       }
 
       setEditProfileOpen(false);
       toast.success(t('profileUpdated'));
-      setLocalProfile(prev => prev ? { ...prev, ...data, ...(profileData ?? {}) } : prev);
+      setLocalProfile(prev => prev
+        ? {
+            ...prev,
+            ...data,
+            ...profileData,
+            photo: photoUrl || String(profileData.photo ?? prev.photo ?? ''),
+          }
+        : prev);
+      window.dispatchEvent(new CustomEvent('sips:profile-updated'));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t('profileUpdateFailed'));
     } finally {
