@@ -27,4 +27,19 @@ describe('isValidRedirect', () => {
   it('should return false for paths starting with backslash', () => {
     expect(isValidRedirect('/\\evil.com')).toBe(false);
   });
+
+  it('should return false for advanced parser-differential bypass attempts (CWE-601)', () => {
+    expect(isValidRedirect('/\\google.com')).toBe(false);
+    expect(isValidRedirect('/\\\\google.com')).toBe(false);
+    expect(isValidRedirect('/%5Cgoogle.com')).toBe(false);
+    expect(isValidRedirect('/%5cgoogle.com')).toBe(false);
+    expect(isValidRedirect('/google.com:80')).toBe(false);
+    expect(isValidRedirect('/google.com/')).toBe(true); // normal relative path
+  });
+
+  it('should permit safe colons and double slashes in query parameters', () => {
+    expect(isValidRedirect('/dashboard?timestamp=2023-10-10T12:00:00Z')).toBe(true);
+    expect(isValidRedirect('/dashboard?target=https://trusted.local/auth')).toBe(true);
+    expect(isValidRedirect('/login?redirect=//evil.com')).toBe(true); // query parameters are safe for redirection targets unless raw redirected
+  });
 });
