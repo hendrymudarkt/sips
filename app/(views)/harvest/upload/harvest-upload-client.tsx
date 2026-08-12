@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { AppDataTable } from '@/app/components/data/app-data-table';
 import type { TableColumn } from 'react-data-table-component';
 import { AccessDenied } from '@/app/components/feedback/access-denied';
@@ -10,7 +11,13 @@ import { useBatchSubmit } from '@/hooks/useBatchSubmit';
 import { formatPerfDate, formatPerfNumber } from '@/utils/helpers/perf-formatter';
 import { FilterBar } from '@/app/components/ui/filter-bar';
 import { ConfirmModal } from '@/app/components/ui/confirm-modal';
-import { UploadLayout } from '@/app/components/ui/upload-layout';
+import { Toolbar } from '@/app/components/ui/toolbar';
+import { QuickSearch } from '@/app/components/ui/quick-search';
+import { SummaryCards } from '@/app/components/ui/summary-cards';
+import { PageLayout } from '@/app/components/ui/page-layout';
+import { exportJsonToCsv } from '@/utils/services/exportCsv';
+import { getTodayISO, getYesterdayISO } from '@/utils/helpers/datetime';
+import AppTour, { type TourStep } from '@/app/components/feedback/app-tour';
 
 interface HarvestingUploadData {
   spbno?: string;
@@ -121,9 +128,18 @@ const createPayloadItem = (record: HarvestingUploadData): Record<string, unknown
 });
 
 export default function HarvestingUploadPage() {
+  const t = useTranslations('HarvestUpload');
   const localeTag = useLocale();
-  const { isMgr, isAdmin, initCheck, userFcba } = useUploadPage();
+  const { isAdmin, initCheck, userFcba } = useUploadPage();
   const { submit, submitting, submitProgress } = useBatchSubmit<HarvestingUploadData>();
+
+  const tourSteps: TourStep[] = [
+    { icon: '👋', title: t('tour1Title'), content: t('tour1Desc') },
+    { icon: '🔍', title: t('tour2Title'), content: t('tour2Desc'), targetSelector: '[data-tour="action-buttons"]' },
+    { icon: '🔎', title: t('tour3Title'), content: t('tour3Desc'), targetSelector: '[data-tour="quick-search"]' },
+    { icon: '📋', title: t('tour4Title'), content: t('tour4Desc'), targetSelector: '[data-tour="filter-button"]' },
+    { icon: '📄', title: t('tour5Title'), content: t('tour5Desc'), targetSelector: '[data-tour="data-table"]' },
+  ];
 
   const [formParams, setFormParams] = useState<HarvestingUploadParams>(EMPTY_PARAMS);
   const [data, setData] = useState<HarvestingUploadData[]>([]);
@@ -167,8 +183,13 @@ export default function HarvestingUploadPage() {
 
   useEffect(() => {
     if (!initCheck) return;
-    const initialParams = { ...EMPTY_PARAMS, fcba: userFcba };
-    setFormParams(prev => ({ ...prev, fcba: userFcba || prev.fcba }));
+    const initialParams = {
+      ...EMPTY_PARAMS,
+      fcba: isAdmin ? '' : userFcba,
+      tanggal: getYesterdayISO(),
+      tanggal_end: getTodayISO(),
+    };
+    setFormParams(initialParams);
     fetchData(initialParams);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initCheck]);
@@ -179,7 +200,12 @@ export default function HarvestingUploadPage() {
   };
 
   const handleResetFilter = () => {
-    setFormParams(isAdmin ? EMPTY_PARAMS : { ...EMPTY_PARAMS, fcba: userFcba });
+    setFormParams({
+      ...EMPTY_PARAMS,
+      fcba: isAdmin ? '' : userFcba,
+      tanggal: getYesterdayISO(),
+      tanggal_end: getTodayISO(),
+    });
   };
 
   const dataWithKey = useMemo(
@@ -217,27 +243,33 @@ export default function HarvestingUploadPage() {
     const search = searchTerm.trim().toLowerCase();
     const result: (HarvestingUploadData & { _rowKey: string; _searchContent: string })[] = [];
     const stats = {
-      count: 0,
       totalBunch: 0,
       totalEstateWeight: 0,
     };
+    const distinctSpb = new Set<string>();
 
     for (const item of dataWithKey) {
       if (!search || (item._searchContent && item._searchContent.includes(search))) {
         result.push(item as HarvestingUploadData & { _rowKey: string; _searchContent: string });
 
         // ⚡ Bolt Optimization: Use pre-calculated numbers to avoid thousands of O(N*M) parsing calls during search
-        stats.count++;
         stats.totalBunch += item._bunchNum || 0;
         stats.totalEstateWeight += item._estateWeightNum || 0;
+
+        const key = (item.nospb || '').trim();
+        if (key) distinctSpb.add(key);
       }
     }
 
+    const spbCount = distinctSpb.size;
     return {
       filteredDataWithKey: result,
       summary: {
-        ...stats,
-        avgBunch: stats.count > 0 ? (stats.totalBunch / stats.count).toFixed(2) : 0,
+        totalRows: result.length,
+        count: spbCount,
+        totalBunch: stats.totalBunch,
+        totalEstateWeight: stats.totalEstateWeight,
+        avgBunch: spbCount > 0 ? (stats.totalBunch / spbCount).toFixed(2) : 0,
       },
     };
   }, [dataWithKey, searchTerm]);
@@ -245,74 +277,105 @@ export default function HarvestingUploadPage() {
   const columns: TableColumn<HarvestingUploadData>[] = useMemo(
     () => [
       {
-        name: '#',
-        width: '50px',
+        name: <span className="whitespace-nowrap">{t('colNo')}</span>,
+        minWidth: '50px',
+        noWrap: true,
         cell: (_row, idx) => <span>{idx + 1}</span>,
         ignoreRowClick: true,
       },
-      { name: 'No SPB', selector: r => r.nospb || '-', sortable: true, width: '110px' },
-      { name: 'Chit No', selector: r => r.chitno || '-', sortable: true, width: '120px' },
-      { name: 'Field Code', selector: r => r.fieldcode || '-', sortable: true, width: '110px' },
+      { name: <span className="whitespace-nowrap">{t('colNoSpb')}</span>, selector: r => r.nospb || '-', sortable: true, minWidth: '170px', noWrap: true },
+      { name: <span className="whitespace-nowrap">{t('colChitno')}</span>, selector: r => r.chitno || '-', sortable: true, minWidth: '170px', noWrap: true },
+      { name: <span className="whitespace-nowrap">{t('colFieldCode')}</span>, selector: r => r.fieldcode || '-', sortable: true, minWidth: '110px', noWrap: true },
       {
-        name: 'Reception Date',
+        name: <span className="whitespace-nowrap">{t('colReceptionDate')}</span>,
         sortable: true,
-        width: '130px',
+        minWidth: '140px',
+        noWrap: true,
         selector: r => r.receptiondate || '',
         cell: r => formatPerfDate(r.receptiondate || '', localeTag) || '-',
       },
       {
-        name: 'Harvest Date',
+        name: <span className="whitespace-nowrap">{t('colHarvestDate')}</span>,
         sortable: true,
-        width: '130px',
+        minWidth: '140px',
+        noWrap: true,
         selector: r => r.harvestdate || '',
         cell: r => formatPerfDate(r.harvestdate || '', localeTag) || '-',
       },
-      { name: 'Vehicle', selector: r => r.vehicle || '-', sortable: true, width: '110px' },
-      { name: 'Driver', selector: r => r.driver || '-', sortable: true, width: '110px' },
-      { name: 'Mill', selector: r => r.mill || '-', sortable: true, width: '100px' },
-      { name: 'Crop Code', selector: r => r.cropcode || '-', sortable: true, width: '110px' },
-      { name: 'Product Code', selector: r => r.productcode || '-', sortable: true, width: '120px' },
+      { name: t('colVehicle'), selector: r => r.vehicle || '-', sortable: true, minWidth: '130px', noWrap: true },
+      { name: t('colDriver'), selector: r => r.driver || '-', sortable: true, minWidth: '180px', noWrap: true },
+      { name: t('colMill'), selector: r => r.mill || '-', sortable: true, minWidth: '100px', noWrap: true },
+      { name: <span className="whitespace-nowrap">{t('colCropCode')}</span>, selector: r => r.cropcode || '-', sortable: true, minWidth: '110px', noWrap: true },
+      { name: <span className="whitespace-nowrap">{t('colProductCode')}</span>, selector: r => r.productcode || '-', sortable: true, minWidth: '120px', noWrap: true },
       {
-        name: 'Bunch',
+        name: t('colBunch'),
         selector: r => r._bunchNum || 0,
         sortable: true,
-        width: '100px',
+        minWidth: '110px',
+        noWrap: true,
         cell: r => formatPerfNumber(r._bunchNum || 0, localeTag),
       },
       {
-        name: 'Estate Weight (kg)',
+        name: <span className="whitespace-nowrap">{t('colEstateWt')}</span>,
         selector: r => r._estateWeightNum || 0,
         sortable: true,
-        width: '140px',
+        minWidth: '150px',
+        noWrap: true,
         cell: r => formatPerfNumber(r._estateWeightNum || 0, localeTag),
       },
       {
-        name: 'Mill Weight Bruto',
+        name: <span className="whitespace-nowrap">{t('colMillWtBruto')}</span>,
         selector: r => r._millWeightBrutoNum || 0,
         sortable: true,
-        width: '140px',
+        minWidth: '150px',
+        noWrap: true,
         cell: r => formatPerfNumber(r._millWeightBrutoNum || 0, localeTag),
       },
       {
-        name: 'Mill Weight Netto',
+        name: <span className="whitespace-nowrap">{t('colMillWtNetto')}</span>,
         selector: r => r._millWeightNettoNum || 0,
         sortable: true,
-        width: '140px',
+        minWidth: '150px',
+        noWrap: true,
         cell: r => formatPerfNumber(r._millWeightNettoNum || 0, localeTag),
       },
-      { name: 'FCBA', selector: r => r.fcba || '-', sortable: true, width: '100px' },
-      { name: 'Keterangan', selector: r => r.keterangan || '-', sortable: true, width: '150px' },
-      { name: 'Last Update', selector: r => r.lastupdate || '-', sortable: true, width: '150px' },
+      { name: t('colFcba'), selector: r => r.fcba || '-', sortable: true, minWidth: '110px', noWrap: true },
+      { name: t('colKeterangan'), selector: r => r.keterangan || '-', sortable: true, minWidth: '220px', noWrap: true },
+      { name: <span className="whitespace-nowrap">{t('colLastUpdate')}</span>, selector: r => r.lastupdate || '-', sortable: true, minWidth: '180px', noWrap: true },
     ],
-    [localeTag]
+    [localeTag, t]
   );
 
   const handleSubmitHarvesting = () => {
     if (data.length === 0) {
-      setError('Tidak ada data untuk dikirim.');
+      setError(t('noDataToSubmit'));
       return;
     }
     setConfirmOpen(true);
+  };
+
+  const handleExport = () => {
+    if (filteredDataWithKey.length === 0) return;
+    const exportData = filteredDataWithKey.map(row => ({
+      'No SPB': row.nospb || '',
+      'Chit No': row.chitno || '',
+      'Field Code': row.fieldcode || '',
+      'Reception Date': row.receptiondate || '',
+      'Harvest Date': row.harvestdate || '',
+      'Vehicle': row.vehicle || '',
+      'Driver': row.driver || '',
+      'Mill': row.mill || '',
+      'Crop Code': row.cropcode || '',
+      'Product Code': row.productcode || '',
+      'Bunch': row._bunchNum || 0,
+      'Estate Weight (kg)': row._estateWeightNum || 0,
+      'Mill Weight Bruto': row._millWeightBrutoNum || 0,
+      'Mill Weight Netto': row._millWeightNettoNum || 0,
+      'FCBA': row.fcba || '',
+      'Keterangan': row.keterangan || '',
+      'Last Update': row.lastupdate || '',
+    }));
+    exportJsonToCsv(exportData, `Harvesting_Upload_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const handleConfirmHarvesting = async () => {
@@ -327,11 +390,11 @@ export default function HarvestingUploadPage() {
     const totalRecords = data.length;
     if (successCount === totalRecords) {
       alert(
-        `✓ Sukses! Semua ${successCount} data harvesting berhasil dikirim ke SIPS.\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`
+        `${t('submitSuccess', { count: successCount })}\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`
       );
       setData([]);
     } else {
-      let msg = `⚠️ Selesai dengan catatan.\nBerhasil: ${successCount}\nGagal: ${totalRecords - successCount}`;
+      let msg = t('submitPartial', { success: String(successCount), fail: String(totalRecords - successCount) });
       if (successList.length > 0) msg += `\n\nSuccessful SPBs:\n${successList.join(', ')}`;
       if (failMessages.length > 0) {
         msg += `\n\nFailed:\n${failMessages.slice(0, 10).join('\n')}`;
@@ -342,46 +405,110 @@ export default function HarvestingUploadPage() {
     }
   };
 
-  if (initCheck && !isMgr && !isAdmin) return <AccessDenied />;
-  if (!initCheck) return <UploadLayout />;
+  if (initCheck && !isAdmin) return <AccessDenied />;
+  if (!initCheck) return <PageLayout />;
 
   return (
-    <UploadLayout>
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-base-content">Upload Harvesting SPB</h1>
-            <p className="text-sm text-base-content/60 mt-1">
-              Tampilkan dan upload data panenan TBS dari external API
-            </p>
-          </div>
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            onClick={() => setShowFilters(s => !s)}
-          >
-            {showFilters ? 'Sembunyikan Filter' : 'Tampilkan Filter'}
-          </button>
-        </div>
+    <PageLayout>
+      <Toolbar
+        title={t('title')}
+        titleTooltip={t('titleTooltip')}
+        actions={[
+          {
+            key: 'filter',
+            label: showFilters ? t('hideFilters') : t('showFilters'),
+            icon: 'filter',
+            onClick: () => setShowFilters(s => !s),
+            tour: 'filter-button',
+          },
+          {
+            key: 'refresh',
+            label: t('refresh'),
+            icon: 'refresh',
+            onClick: () => fetchData(),
+            loading: loading,
+          },
+          {
+            key: 'export',
+            label: t('export'),
+            icon: 'export',
+            onClick: handleExport,
+            disabled: filteredDataWithKey.length === 0,
+          },
+          {
+            key: 'submit',
+            label: submitting ? submitProgress || t('submitting') : t('submit'),
+            icon: 'upload',
+            onClick: handleSubmitHarvesting,
+            disabled: data.length === 0,
+            loading: submitting,
+            variant: 'primary',
+            tour: 'submit-button',
+          },
+        ]}
+      >
+        <AppTour steps={tourSteps} btnClassName="join-item flex-1 sm:flex-none" />
+      </Toolbar>
 
-        {/* Filter Section */}
+      {/* Search + Summary */}
+      {data.length > 0 && (
+        <div className="mb-3 flex flex-col md:flex-row md:items-center gap-4 animate-slideUp [animation-delay:100ms]">
+          <SummaryCards
+            cards={[
+              { label: t('totalSpb'), value: String(summary.count), className: 'text-primary' },
+              {
+                label: t('totalBunch'),
+                value: formatPerfNumber(summary.totalBunch, localeTag),
+                className: 'text-success',
+              },
+              {
+                label: t('avgBunch'),
+                value: Number(summary.avgBunch).toFixed(1),
+                className: 'text-info',
+              },
+              {
+                label: t('totalEstateWt'),
+                value: `${(summary.totalEstateWeight / 1000).toFixed(1)}T`,
+                className: 'text-warning',
+              },
+            ]}
+          />
+          <div className="flex items-center gap-2 md:ml-auto">
+            <QuickSearch
+              value={searchTerm}
+              onChange={setSearchTerm}
+              placeholder={t('searchPlaceholder')}
+              className="w-full sm:w-72 sm:shrink-0"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Filter Section */}
         {showFilters && (
           <FilterBar
             fields={[
-              { key: 'nospb', label: 'No SPB', type: 'text', placeholder: 'SPB2026004804' },
-              { key: 'tanggal', label: '', type: 'date', placeholder: 'Tanggal Mulai' },
-              { key: 'tanggal_end', label: '', type: 'date', placeholder: 'Tanggal Akhir' },
-              { key: 'mill', label: 'Mill', type: 'text', placeholder: 'DOM, PPI, dll' },
-              { key: 'kode_kendaraan', label: 'Kode Kendaraan', type: 'text', placeholder: 'L9770CL' },
-              { key: 'kode_karyawan_driver', label: 'Driver', type: 'text', placeholder: 'Nama driver' },
-              { key: 'chitno', label: 'Chit Number', type: 'text', placeholder: 'TBS2026004804' },
-              { key: 'fcba', label: 'FCBA', type: 'text', placeholder: 'PTE, MTE, dll' },
+              { key: 'tanggal', label: '', type: 'date', placeholder: t('fTanggalMulai') },
+              { key: 'tanggal_end', label: '', type: 'date', placeholder: t('fTanggalAkhir') },
+              { key: 'nospb', label: t('fNoSpb'), type: 'text', placeholder: t('fNoSpb') },
+              { key: 'chitno', label: t('fChitno'), type: 'text', placeholder: t('fChitno') },
+              { key: 'fcba', label: t('fFcba'), type: 'text', placeholder: t('fFcba'), disabled: !isAdmin },
+              { key: 'mill', label: t('fMill'), type: 'text', placeholder: t('fMill') },
+              { key: 'kode_kendaraan', label: t('fKendaraan'), type: 'text', placeholder: t('fKendaraan') },
+              { key: 'kode_karyawan_driver', label: t('fDriver'), type: 'text', placeholder: t('fDriver') },
             ]}
             values={formParams as Record<string, string>}
             onChange={(key, value) => setFormParams(prev => ({ ...prev, [key]: value }))}
             onApply={() => handleSearch()}
             onReset={handleResetFilter}
             loading={loading}
+            t={key =>
+              key === 'filterApply'
+                ? t('filterApply')
+                : key === 'filterReset'
+                  ? t('filterReset')
+                  : t('loading')
+            }
           />
         )}
 
@@ -393,89 +520,17 @@ export default function HarvestingUploadPage() {
         {loading && !showFilters && (
           <div className="alert alert-info mb-4 shadow-sm">
             <span className="loading loading-spinner loading-sm" />
-            <span>Mengambil data harvesting dari server...</span>
+            <span>{t('loadingFetch')}</span>
           </div>
         )}
         {!loading && data.length === 0 && !error && (
           <div className="alert mb-4 shadow-sm bg-base-200 border border-base-300">
             <div>
-              <p className="font-medium">Tidak ada data harvesting</p>
+              <p className="font-medium">{t('emptyTitle')}</p>
               <p className="text-sm opacity-75">
-                Silakan gunakan filter untuk mencari data SPB panenan.
+                {t('emptyHint')}
               </p>
             </div>
-          </div>
-        )}
-
-        {/* Summary Stats */}
-        {data.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="bg-primary/10 rounded-lg p-4 border border-primary/20">
-              <div className="text-sm text-base-content/60">Total SPB</div>
-              <div className="text-2xl font-bold text-primary">{summary.count}</div>
-            </div>
-            <div className="bg-success/10 rounded-lg p-4 border border-success/20">
-              <div className="text-sm text-base-content/60">Total Bunch</div>
-              <div className="text-2xl font-bold text-success">
-                {formatPerfNumber(summary.totalBunch, localeTag)}
-              </div>
-            </div>
-            <div className="bg-info/10 rounded-lg p-4 border border-info/20">
-              <div className="text-sm text-base-content/60">Avg Bunch/SPB</div>
-              <div className="text-2xl font-bold text-info">
-                {Number(summary.avgBunch).toFixed(1)}
-              </div>
-            </div>
-            <div className="bg-warning/10 rounded-lg p-4 border border-warning/20">
-              <div className="text-sm text-base-content/60">Total Estate Wt</div>
-              <div className="text-2xl font-bold text-warning">
-                {(summary.totalEstateWeight / 1000).toFixed(1)}T
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 mb-6 items-center flex-wrap">
-          <button
-            onClick={handleSubmitHarvesting}
-            disabled={data.length === 0 || submitting}
-            className="btn btn-success"
-          >
-            {submitting ? (
-              <>
-                <span className="loading loading-spinner loading-sm" />
-                {submitProgress || 'Submitting...'}
-              </>
-            ) : (
-              '📤 Submit ke SIPS'
-            )}
-          </button>
-          {data.length > 0 && (
-            <span className="text-sm font-medium">
-              {filteredDataWithKey.length} dari {data.length} records
-            </span>
-          )}
-        </div>
-
-        {/* Search Box */}
-        {data.length > 0 && (
-          <div className="mb-4 max-w-md relative">
-            <input
-              type="text"
-              placeholder="Cari No SPB, Vehicle, Driver, Mill..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="input input-bordered input-sm w-full pl-10"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-base-content/40 hover:text-base-content"
-              >
-                ✕
-              </button>
-            )}
           </div>
         )}
 
@@ -485,20 +540,23 @@ export default function HarvestingUploadPage() {
             columns={columns}
             data={filteredDataWithKey}
             loading={loading}
-            paginationPerPage={10}
-            paginationRowsPerPageOptions={[10, 30, 100, 500]}
-            noDataComponent={<div className="py-8 text-base-content/70">Tidak ada data.</div>}
+            namespace="Harvest"
+            paginationPerPage={100}
+            paginationRowsPerPageOptions={[100, 500, 1000, 5000]}
+            noDataComponent={<div className="py-8 text-base-content/70">{t('noData')}</div>}
           />
         )}
       <ConfirmModal
         open={confirmOpen}
-        title="Konfirmasi"
-        message={`Yakin ingin mengirim ${data.length} record harvesting ke SIPS?\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`}
+        title={t('confirmTitle')}
+        message={`${t('confirmMessage', { count: data.length })}\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`}
+        confirmText={t('confirmOk')}
+        cancelText={t('cancel')}
         onConfirm={handleConfirmHarvesting}
         onCancel={() => setConfirmOpen(false)}
         loading={submitting}
       />
-    </UploadLayout>
+    </PageLayout>
   );
 }
 

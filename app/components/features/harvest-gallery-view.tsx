@@ -273,7 +273,7 @@ const HarvestCard = memo(function HarvestCard({
                       GMaps
                     </a>
                     <a
-                      href={`/gis?${new URLSearchParams({ dateFrom: (item.tanggal || '').split(' ')[0], dateTo: (item.tanggal || '').split(' ')[0], nodokumen: item.nodokumen || '' }).toString()}`}
+                      href={`/gis/?${new URLSearchParams({ dateFrom: (item.tanggal || '').split(' ')[0], dateTo: (item.tanggal || '').split(' ')[0], nodokumen: item.nodokumen || '' }).toString()}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="link link-info text-xs flex items-center gap-1"

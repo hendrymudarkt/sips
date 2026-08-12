@@ -47,13 +47,10 @@ export const Theme = () => {
       <button
         ref={triggerRef}
         type="button"
-        className="flex items-center justify-between w-full focus-visible:ring-2 focus-visible:ring-primary rounded-md px-1 py-1"
+        className="flex items-center justify-between w-full text-left focus-visible:ring-2 focus-visible:ring-primary rounded-md py-1"
         aria-label={t('theme')}
       >
-        <div className="flex items-center gap-3">
-          <Icon name="theme" className="h-5 w-5" />
-          <span>{t('theme')}</span>
-        </div>
+        <span>{t('theme')}</span>
         <Icon name="chevron-down" className="h-3 w-3 opacity-60" />
       </button>
       <ul

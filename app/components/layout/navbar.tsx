@@ -137,6 +137,15 @@ export default memo(function Navbar() {
               <span className="font-bold">{fullNameDisplay ?? t('pengguna')}</span>
             </li>
             <li>
+              <button
+                onClick={() => handleNavigate('/change-password')}
+                className="w-full text-left"
+                disabled={!!isNavigating}
+              >
+                {t('profile')}
+              </button>
+            </li>
+            <li>
               <Theme />
             </li>
             <li>
@@ -171,15 +180,6 @@ export default memo(function Navbar() {
                 </a>
               </li>
             )}
-            <li>
-              <button
-                onClick={() => handleNavigate('/change-password')}
-                className="w-full text-left"
-                disabled={!!isNavigating}
-              >
-                {t('profile')}
-              </button>
-            </li>
             <li>
               <button
                 onClick={handleLogout}

@@ -13,7 +13,7 @@ export default function CekDoketClient() {
   if (dateTo) params.set('dateTo', dateTo);
   if (nodokumen) params.set('nodokumen', nodokumen);
 
-  const src = `/gis${params.toString() ? `?${params.toString()}` : ''}`;
+  const src = `/gis/${params.toString() ? `?${params.toString()}` : ''}`;
 
   return (
     <div className="h-[calc(100vh-64px)] w-full">

@@ -14,6 +14,18 @@ const GIS_BASE = (process.env.NEXT_PUBLIC_GIS_URL || 'http://gis.skj.my.id').rep
 // without touching full URLs (http://host/api/...) or paths already proxied.
 const ROOT_PATH_RE = /(?<![/:.\w])\/(asset|api|data)\//g;
 
+// Absolute URLs pointing back at the GIS base itself (http://gis.skj.my.id/...).
+// These are served over HTTP, so inside an HTTPS page they are blocked as mixed
+// content and map markers / photos won't render. Rewriting them to the same-origin
+// /gis proxy keeps them loading while the page is framed on this origin.
+const absoluteGisRe = (() => {
+  // Strip the protocol, then match `https?://<host>` (with the scheme added
+  // once) followed by a path, query, hash, or end-of-string.
+  const host = GIS_BASE.replace(/^https?:\/\//i, '');
+  const escaped = host.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`https?:\\/\\/${escaped}(?=[/?#]|$)`, 'g');
+})();
+
 // Directives in the upstream response that would prevent framing / break JS.
 const FRAMING_HEADERS = [
   'content-security-policy',
@@ -31,7 +43,17 @@ const FORWARDED_HEADERS = [
 ];
 
 function rewriteBody(body: string): string {
-  return body.replace(ROOT_PATH_RE, (match) => `/gis${match}`);
+  // 1) Same-origin absolute GIS URLs (http://gis.skj.my.id/...) -> /gis/...
+  let out = body.replace(absoluteGisRe, '/gis');
+  // 2) Root-absolute asset/api/data paths -> /gis/asset|api|data/...
+  out = out.replace(ROOT_PATH_RE, (match) => `/gis${match}`);
+  // 3) Pin the document base so relative references (e.g. the marker photo
+  //    URL "api/image?file=..." built at runtime in JS) also resolve under
+  //    /gis and get proxied — otherwise they resolve against / and 404.
+  if (!/<base\b/i.test(out)) {
+    out = out.replace(/<head(?=[\s>])/i, `<head><base href="/gis/">`);
+  }
+  return out;
 }
 
 async function proxy(req: NextRequest, method: 'GET' | 'POST' | 'HEAD') {
