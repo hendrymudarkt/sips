@@ -33,8 +33,8 @@ export default memo(function Navbar() {
     setIsNavigating(null);
   }, [pathname]);
 
-  // Read cookies once on mount.
-  useEffect(() => {
+  // Read cookies on mount and whenever the profile is edited (sips:profile-updated).
+  const syncUserInfo = useCallback(() => {
     const { photo, fullName, fcba } = cookieStore.getAllUserInfo();
     const cleanPhoto = photo?.trim();
     const name = fullName?.trim() ?? '';
@@ -49,6 +49,15 @@ export default memo(function Navbar() {
     );
     setFullNameDisplay(parts.join(' ').trim() || null);
   }, []);
+
+  useEffect(() => {
+    syncUserInfo();
+  }, [syncUserInfo]);
+
+  useEffect(() => {
+    window.addEventListener('sips:profile-updated', syncUserInfo);
+    return () => window.removeEventListener('sips:profile-updated', syncUserInfo);
+  }, [syncUserInfo]);
 
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);

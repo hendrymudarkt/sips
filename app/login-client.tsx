@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useTranslations } from 'next-intl';
@@ -339,6 +340,10 @@ export default function Home() {
                 )}
               </button>
             </div>
+
+            <Link href="/forgot-password" className="link link-primary link-hover self-center text-xs">
+              {tAuth('forgotPassword')}
+            </Link>
 
             {env.NEXT_PUBLIC_SITE_URL && (
               <a

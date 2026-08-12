@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { TableColumn } from 'react-data-table-component';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,14 +12,16 @@ import { SearchSelect, type Option } from '@/app/components/ui/search-select';
 import { EmptyState } from '@/app/components/feedback/empty-state';
 import { Icon } from '@/app/components/ui/icons';
 import { PhotoCell } from '@/app/components/ui/photo-cell';
-import { ExportButton } from '@/app/components/ui/export-button';
 import { SectionHeader } from '@/app/components/ui/section-header';
 import { Toolbar } from '@/app/components/ui/toolbar';
 import { PageLayout } from '@/app/components/ui/page-layout';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
+import { UsersGalleryView, type UsersGalleryHandle } from '@/app/components/features/users-gallery-view';
 import { useUsersData } from '@/hooks/useUsersData';
 import { QueryKeys } from '@/utils/queryKeys';
+import { buildWhatsAppUrl, buildMailtoUrl } from '@/utils/helpers/contactLinks';
+import { isSafeHref } from '@/lib/utils/inputSanitizer';
 import type { SipsUser, UserFormState } from '@/types/domain';
 import { initialUserForm } from '@/types/domain';
 import { StatusBadge } from '@/app/components/ui/status-badge';
@@ -82,12 +85,12 @@ export default function UsersClient() {
   const {
     q, setQ,
     showFilters, setShowFilters,
-    filters, setFilters, setAppliedFilters, clearFilters,
+    filters, setFilters, setAppliedFilters, appliedFilters, clearFilters,
     afdelingFilterOptions, gangcodeFilterOptions,
     scopedFcbaOptions,
     sectionOptions, gangOptions,
     bulkSectionOptions, bulkGangOptions,
-    isFcbaRestricted, userFcba,
+    isFcbaRestricted, userFcba, userLevel,
     isLoading, isFetching, filteredUsers,
     setSelFcba, setSelAfdeling,
     form, setForm,
@@ -99,36 +102,43 @@ export default function UsersClient() {
     bulkGang, setBulkGang,
     setBulkRows, bulkRows, bulkLoading,
     editOpen, setEditOpen,
-    editUser, editLoading,
+    editUser,
     editMutation,
-    detailOpen, setDetailOpen,
-    detailUser, detailLoading,
     onChangeFcba, onChangeAfdeling, onChangeGang,
     applyBulkDefaults,
     addBulkRow, removeBulkRow, updateBulkRow,
     handleBulkSubmit,
-    handleDetail, handleEdit, handleToggleStatus,
+    handleEdit, handleToggleStatus,
     handleAddUser, handleExport,
-    resolveSection,
   } = useUsersData(initialQ, initialFilters);
 
   const visibleLevelOptions = useMemo(() => LEVEL_OPTIONS, []);
 
   const visiblePositionOptions = useMemo(() => POSITION_OPTIONS, []);
 
-  const [editForm, setEditForm] = useState({ fullname: '', email: '', phone: '', afdeling: '', gangcode: '', level: '', position: '' });
+  const [viewMode, setViewMode] = useState<'table' | 'gallery'>('table');
+  const galleryRef = useRef<UsersGalleryHandle>(null);
+  const [allExpanded, setAllExpanded] = useState(false);
+
+  const [editForm, setEditForm] = useState({ username: '', fullname: '', email: '', phone: '', fcba: '', afdeling: '', gangcode: '', idkaryawan: '', level: '', position: '', password: '' });
   const [editPhoto, setEditPhoto] = useState<File | null>(null);
+
+  const isAdmin = userLevel === 'ADM';
 
   useEffect(() => {
     if (editUser) {
       setEditForm({
+        username: editUser.username ?? '',
         fullname: editUser.fullname ?? '',
         email: editUser.email ?? '',
         phone: editUser.phone ?? '',
+        fcba: editUser.fcba ?? '',
         afdeling: editUser.afdeling ?? '',
         gangcode: editUser.gangcode ?? '',
+        idkaryawan: editUser.idkaryawan ?? '',
         level: editUser.level ?? '',
         position: editUser.position ?? '',
+        password: '',
       });
       setEditPhoto(null);
     }
@@ -197,7 +207,8 @@ export default function UsersClient() {
       },
       {
         name: <span className="block text-center w-full">{t('actions')}</span>,
-        style: { minWidth: '160px', textAlign: 'center' },
+        width: '110px',
+        style: { textAlign: 'center' },
         cell: row => (
           <div className="flex gap-0.5">
             <button
@@ -206,13 +217,6 @@ export default function UsersClient() {
               title={t('edit')}
             >
               <Icon name="edit" className="h-4 w-4" />
-            </button>
-            <button
-              className="btn btn-ghost btn-xs px-1"
-              onClick={() => handleDetail(row.id)}
-              title={t('viewDetail')}
-            >
-              <Icon name="eye-view" className="h-4 w-4" />
             </button>
             <button
               className={`btn btn-ghost btn-xs px-1 ${row.status === 'Y' ? 'text-warning' : 'text-success'}`}
@@ -229,70 +233,103 @@ export default function UsersClient() {
       },
       {
         name: t('username'),
-        selector: row => row.username ?? '-',
         sortable: true,
-        wrap: true,
-        style: { minWidth: '100px' },
+        width: '130px',
+        cell: row => <span className="block truncate" title={row.username}>{row.username ?? '-'}</span>,
       },
       {
         name: t('fullname'),
-        selector: row => row.fullname ?? '-',
         sortable: true,
-        wrap: true,
-        style: { minWidth: '200px' },
+        width: '180px',
+        cell: row => <span className="block truncate" title={row.fullname}>{row.fullname ?? '-'}</span>,
       },
       {
         name: t('email'),
-        selector: row => row.email ?? '-',
         sortable: true,
-        wrap: true,
-        style: { minWidth: '130px' },
+        width: '190px',
+        cell: row =>
+          row.email ? (
+            <a
+              href={isSafeHref(buildMailtoUrl(row.email)) ? buildMailtoUrl(row.email) : undefined}
+              className="link link-primary block truncate w-full"
+              title={row.email}
+            >
+              {row.email}
+            </a>
+          ) : (
+            '-'
+          ),
       },
       {
         name: t('phone'),
-        selector: row => row.phone ?? '-',
         sortable: true,
-        style: { minWidth: '90px' },
+        width: '120px',
+        cell: row =>
+          row.phone ? (
+            <a
+              href={buildWhatsAppUrl(row.phone)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link link-primary inline-flex items-center gap-1 whitespace-nowrap"
+              title={t('openWhatsApp')}
+            >
+              {row.phone}
+              <Icon name="external-link" className="h-3.5 w-3.5" />
+            </a>
+          ) : (
+            '-'
+          ),
       },
       {
         name: <span className="block text-center w-full">FCBA</span>,
-        selector: row => row.fcba ?? '-',
         sortable: true,
-        style: { minWidth: '70px', textAlign: 'center' },
+        width: '60px',
+        style: { textAlign: 'center' },
+        cell: row => <span className="truncate">{row.fcba ?? '-'}</span>,
       },
       {
         name: t('afdeling'),
-        selector: row => row.afdeling ?? '-',
         sortable: true,
-        style: { minWidth: '80px' },
+        width: '90px',
+        cell: row => <span className="block truncate" title={row.afdeling}>{row.afdeling ?? '-'}</span>,
       },
       {
         name: t('gangcode'),
-        selector: row => row.gangcode ?? '-',
         sortable: true,
-        style: { minWidth: '70px' },
+        width: '90px',
+        cell: row => <span className="block truncate" title={row.gangcode}>{row.gangcode ?? '-'}</span>,
       },
       {
-        name: <span className="block text-center w-full">{t('level')}</span>,
-        selector: row => row.level ?? '-',
+        name: <span className="block text-center w-full">{t('position')}</span>,
         sortable: true,
-        style: { minWidth: '70px', textAlign: 'center' },
-      },
-      {
-        name: t('position'),
-        selector: row => row.position ?? '-',
-        sortable: true,
-        wrap: true,
-        style: { minWidth: '80px' },
+        width: '150px',
+        cell: row => (
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="block truncate min-w-0" title={row.position}>{row.position ?? '-'}</span>
+            {row.level && <span className="badge badge-ghost badge-xs shrink-0">{row.level}</span>}
+          </div>
+        ),
       },
       {
         name: <span className="block text-center w-full">{t('status')}</span>,
         sortable: true,
-        style: { minWidth: '70px', textAlign: 'center' },
+        width: '80px',
+        style: { textAlign: 'center' },
         cell: row => <StatusBadge status={row.status} label={row.status === 'Y' ? t('active') : t('inactive')} />,
       },
+      {
+        name: <span title={t('photo')}>{t('photo')}</span>,
+        width: '70px',
+        cell: row =>
+          row.photo ? (
+            <PhotoCell imageUrl={row.photo} alt="foto" href={row.photo} size={40} />
+          ) : (
+            '-'
+          ),
+        ignoreRowClick: true,
+      },
     ],
-    [t, handleDetail, handleEdit, handleToggleStatus]
+    [t, handleEdit, handleToggleStatus]
   );
 
   return (
@@ -303,17 +340,44 @@ export default function UsersClient() {
           actions={[
             { key: 'filter', label: showFilters ? t('hideFilters') : t('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
             { key: 'refresh', label: isFetching ? t('loading') : t('refresh'), icon: 'refresh', onClick: () => queryClient.invalidateQueries({ queryKey: QueryKeys.USERS() }), disabled: isFetching, loading: isFetching, variant: 'outline' },
-            { key: 'add', label: t('addUser'), icon: 'plus', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setForm({ ...initialUserForm, fcba: df }); setForm({ ...initialUserForm, fcba: df }); setSelFcba(df); setSelAfdeling(''); setAddOpen(true); }, variant: 'primary', tour: 'add-button' },
+            { key: 'export', label: t('export'), icon: 'export', onClick: handleExport, variant: 'outline' },
+            { key: 'add', label: t('addUser'), icon: 'plus', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setForm({ ...initialUserForm, fcba: df }); setSelFcba(df); setSelAfdeling(''); setAddOpen(true); }, variant: 'primary', tour: 'add-button' },
             { key: 'bulk', label: t('bulkAdd'), icon: 'people', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setBulkRows([{ ...initialBulkRow, fcba: df }]); setBulkFcba(df); setBulkAfdeling(''); setBulkGang(''); setBulkOpen(true); }, variant: 'outline' },
           ]}
         >
           <AppTour steps={tourSteps} storageKey="tour-users" onStepChange={stepIndex => { if (stepIndex === 3) { setShowFilters(true); } }} />
-          <ExportButton onClick={handleExport} label={t('export')} />
         </Toolbar>
 
-        {/* ── Search ── */}
-        <div className="flex justify-end">
-          <QuickSearch value={q} onChange={setQ} placeholder={t('searchPlaceholder')} className="w-full sm:w-72" />
+        {/* ── Search & View Toggle ── */}
+        <div className="flex items-center gap-2 justify-end mb-3">
+          <QuickSearch value={q} onChange={setQ} placeholder={t('searchPlaceholder')} className="w-full sm:w-72 sm:shrink-0" />
+          <div className="join flex-none">
+            <button
+              className="btn btn-outline join-item"
+              onClick={() => setViewMode(v => (v === 'table' ? 'gallery' : 'table'))}
+              title={viewMode === 'table' ? t('galleryView') : t('tableView')}
+            >
+              <Icon name={viewMode === 'table' ? 'layout-grid' : 'list'} className="h-4 w-4" />
+              <span className="hidden sm:inline">{viewMode === 'table' ? t('galleryView') : t('tableView')}</span>
+            </button>
+            {viewMode === 'gallery' && (
+              <button
+                className="btn btn-outline join-item"
+                onClick={() => {
+                  if (allExpanded) {
+                    galleryRef.current?.collapseAll();
+                  } else {
+                    galleryRef.current?.expandAll();
+                  }
+                  setAllExpanded(!allExpanded);
+                }}
+                title={allExpanded ? t('closeAll') : t('openAll')}
+              >
+                <Icon name="chevron-down" className={`h-4 w-4 ${allExpanded ? 'rotate-180' : ''}`} />
+                <span className="hidden sm:inline">{allExpanded ? t('closeAll') : t('openAll')}</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* ── Filters ── */}
@@ -338,26 +402,49 @@ export default function UsersClient() {
           />
         )}
 
-        {/* ── Table ── */}
-        {isLoading ? (
-          <SkeletonTable rows={10} />
-        ) : filteredUsers.length === 0 ? (
-          <EmptyState
-            namespace="Users"
-            onClearSearch={() => {
-              setQ('');
-              clearFilters();
-            }}
-          />
+        {/* ── Table / Gallery ── */}
+        {viewMode === 'table' ? (
+          isLoading ? (
+            <SkeletonTable rows={10} />
+          ) : filteredUsers.length === 0 ? (
+            <EmptyState
+              namespace="Users"
+              onClearSearch={() => {
+                setQ('');
+                clearFilters();
+              }}
+            />
+          ) : (
+            <AppDataTable
+              columns={columns}
+              data={filteredUsers}
+              paginationPerPage={25}
+              paginationRowsPerPageOptions={[10, 25, 50, 100]}
+              striped
+              noDataComponent={<EmptyState namespace="Users" />}
+            />
+          )
         ) : (
-          <AppDataTable
-            columns={columns}
-            data={filteredUsers}
-            paginationPerPage={25}
-            paginationRowsPerPageOptions={[10, 25, 50, 100]}
-            striped
-            noDataComponent={<EmptyState namespace="Users" />}
-          />
+          <div className="animate-slideUp [animation-delay:200ms]">
+            {isLoading ? (
+              <div className="p-8">
+                <SkeletonTable rows={10} />
+              </div>
+            ) : (
+              <UsersGalleryView
+                ref={galleryRef}
+                items={filteredUsers}
+                onClearSearch={
+                  q || Object.keys(appliedFilters).length > 0
+                    ? () => {
+                        setQ('');
+                        clearFilters();
+                      }
+                    : undefined
+                }
+              />
+            )}
+          </div>
         )}
 
       {/* ═══════════════════════ ADD USER MODAL ═══════════════════════ */}
@@ -771,10 +858,14 @@ export default function UsersClient() {
         onClose={() => { setEditOpen(false); setEditPhoto(null); }}
         onSubmit={(e: React.FormEvent<HTMLFormElement>) => {
           e.preventDefault();
+          if (editForm.password && editForm.password.length < 8) {
+            toast.error(t('passwordLength'));
+            return;
+          }
           const data: Record<string, string> = {};
-          const fields = ['fullname', 'email', 'phone', 'afdeling', 'gangcode', 'level', 'position'] as const;
+          const fields = ['username', 'fullname', 'email', 'phone', 'fcba', 'afdeling', 'gangcode', 'idkaryawan', 'level', 'position', 'password'] as const;
           for (const f of fields) {
-            if (editForm[f as keyof typeof editForm]) data[f] = editForm[f as keyof typeof editForm];
+            if (editForm[f]) data[f] = editForm[f];
           }
           if (editUser) editMutation.mutate({ id: editUser.id, data, photo: editPhoto });
         }}
@@ -784,7 +875,12 @@ export default function UsersClient() {
       >
         <fieldset className="fieldset col-span-12 md:col-span-6">
           <legend className="fieldset-legend">{t('username')}</legend>
-          <input type="text" className="input input-bordered w-full" value={editUser?.username ?? ''} disabled />
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editForm.username}
+            onChange={e => setEditForm(s => ({ ...s, username: e.target.value }))}
+          />
         </fieldset>
         <fieldset className="fieldset col-span-12 md:col-span-6">
           <legend className="fieldset-legend">{t('fullname')} *</legend>
@@ -814,11 +910,37 @@ export default function UsersClient() {
             onChange={e => setEditForm(s => ({ ...s, phone: e.target.value }))}
           />
         </fieldset>
+        <fieldset className="fieldset col-span-12">
+          <legend className="fieldset-legend">{t('password')}</legend>
+          <input
+            type="password"
+            className="input input-bordered w-full"
+            value={editForm.password}
+            onChange={e => setEditForm(s => ({ ...s, password: e.target.value }))}
+            placeholder="••••••••"
+            minLength={8}
+          />
+          <span className="text-[0.6rem] text-base-content/40 mt-0.5 block leading-tight">
+            {t('passwordOptionalHint')}
+          </span>
+        </fieldset>
 
         <SectionHeader title={t('assignment')} />
         <fieldset className="fieldset col-span-12 md:col-span-4">
           <legend className="fieldset-legend">FCBA</legend>
-          <input type="text" className="input input-bordered w-full" value={editUser?.fcba ?? '-'} disabled />
+          <SearchSelect
+            options={scopedFcbaOptions}
+            value={editForm.fcba}
+            onChange={v => setEditForm(s => ({ ...s, fcba: v }))}
+            placeholder={t('select')}
+            translationNamespace="Users"
+            disabled={!isAdmin}
+          />
+          {!isAdmin && (
+            <span className="text-[0.6rem] text-base-content/40 mt-0.5 block leading-tight">
+              {t('fcbaAdminOnly')}
+            </span>
+          )}
         </fieldset>
         <fieldset className="fieldset col-span-12 md:col-span-4">
           <legend className="fieldset-legend">{t('afdeling')}</legend>
@@ -858,8 +980,13 @@ export default function UsersClient() {
           </select>
         </fieldset>
         <fieldset className="fieldset col-span-12 md:col-span-6">
-          <legend className="fieldset-legend">{t('level')}</legend>
-          <input type="text" className="input input-bordered w-full" value={editForm.level} disabled />
+          <legend className="fieldset-legend">{t('idkaryawan')}</legend>
+          <input
+            type="text"
+            className="input input-bordered w-full"
+            value={editForm.idkaryawan}
+            onChange={e => setEditForm(s => ({ ...s, idkaryawan: e.target.value }))}
+          />
         </fieldset>
 
         <SectionHeader title={t('photo')} />
@@ -869,53 +996,6 @@ export default function UsersClient() {
             onChange={f => setEditPhoto(f)}
           />
         </fieldset>
-      </FormModal>
-
-      {/* ═══════════════════════ DETAIL MODAL ═══════════════════════ */}
-      <FormModal
-        open={detailOpen}
-        title={t('userDetail')}
-        onClose={() => setDetailOpen(false)}
-        loading={detailLoading}
-        cancelText={t('close')}
-        size="md"
-      >
-        {detailUser ? (
-          <div className="flex flex-col gap-4 py-4 col-span-12">
-            <div className="flex justify-center mb-1">
-              <PhotoCell imageUrl={detailUser.photo} alt="foto" href={detailUser.photo ?? ''} size={40} />
-            </div>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-base-content/60">{t('username')}</dt>
-              <dd className="font-medium">{detailUser.username ?? '-'}</dd>
-              <dt className="text-base-content/60">{t('fullname')}</dt>
-              <dd className="font-medium">{detailUser.fullname ?? '-'}</dd>
-              <dt className="text-base-content/60">Email</dt>
-              <dd className="font-medium break-all">{detailUser.email ?? '-'}</dd>
-              <dt className="text-base-content/60">{t('phone')}</dt>
-              <dd className="font-medium">{detailUser.phone ?? '-'}</dd>
-              <dt className="text-base-content/60">FCBA</dt>
-              <dd className="font-medium">{resolveSection(detailUser.fcba ?? '')}</dd>
-              <dt className="text-base-content/60">{t('afdeling')}</dt>
-              <dd className="font-medium">{detailUser.afdeling ?? '-'}</dd>
-              <dt className="text-base-content/60">{t('gangcode')}</dt>
-              <dd className="font-medium">{detailUser.gangcode ?? '-'}</dd>
-              <dt className="text-base-content/60">{t('level')}</dt>
-              <dd className="font-medium">{detailUser.level ?? '-'}</dd>
-              <dt className="text-base-content/60">{t('position')}</dt>
-              <dd className="font-medium">{detailUser.position ?? '-'}</dd>
-              <dt className="text-base-content/60">{t('idkaryawan')}</dt>
-              <dd className="font-medium">{detailUser.idkaryawan ?? '-'}</dd>
-              <dt className="text-base-content/60">{t('status')}</dt>
-              <dd>
-                <StatusBadge status={detailUser.status} label={detailUser.status === 'Y' ? t('active') : t('inactive')} />
-              </dd>
-            </dl>
-
-          </div>
-        ) : (
-          <p className="col-span-12 text-base-content/60 text-center py-8">{t('noData')}</p>
-        )}
       </FormModal>
     </PageLayout>
   );

@@ -195,9 +195,6 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
   const [editOpen, setEditOpen] = useState(false);
   const [editUser, setEditUser] = useState<SipsUser | null>(null);
   const [editLoading, setEditLoading] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [detailUser, setDetailUser] = useState<SipsUser | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
 
   const [bulkRows, setBulkRows] = useState<UserFormState[]>([{ ...initialUserForm, password: '12345678' }]);
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -249,26 +246,6 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
       }))
     );
   };
-
-  const handleDetail = useCallback(
-    async (id: number) => {
-      setDetailLoading(true);
-      setDetailOpen(true);
-      try {
-        const res = await fetch(`/api/master/user/${id}`, { credentials: 'include' });
-        const json: unknown = await res.json();
-        const d = extractSingleData<SipsUser>(json) || users.find(u => u.id === id) || null;
-        if (!res.ok || !d) throw new Error('Failed to load user details');
-        setDetailUser(d);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Failed to load user details');
-        setDetailOpen(false);
-      } finally {
-        setDetailLoading(false);
-      }
-    },
-    [users]
-  );
 
   const handleToggleStatus = useCallback(
     (user: SipsUser) => {
@@ -439,11 +416,6 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     }
   };
 
-  const resolveSection = useCallback(
-    (fcbaCode: string) => fcbaCode,
-    []
-  );
-
   const loading = isLoading || isFetching;
 
   const handleExport = () => {
@@ -473,7 +445,6 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
       if (e.key === 'Escape') {
         setAddOpen(false);
         setBulkOpen(false);
-        setDetailOpen(false);
       }
     };
     window.addEventListener('keydown', handler);
@@ -514,8 +485,6 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     editOpen, setEditOpen,
     editUser, editLoading,
     editMutation,
-    detailOpen, setDetailOpen,
-    detailUser, detailLoading,
     setBulkRows, bulkRows, bulkLoading,
     bulkFcba, setBulkFcba,
     bulkAfdeling, setBulkAfdeling,
@@ -523,8 +492,7 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     applyBulkDefaults,
     addBulkRow, removeBulkRow, updateBulkRow,
     handleBulkSubmit,
-    handleDetail, handleEdit, handleToggleStatus,
+    handleEdit, handleToggleStatus,
     handleAddUser, handleExport,
-    resolveSection,
   };
 }

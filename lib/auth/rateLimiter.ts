@@ -21,6 +21,13 @@ const changePasswordRateLimiter = new RateLimiterMemory({
   duration: 60,
 });
 
+// Rate limiter untuk forgot/reset password
+// 3 percobaan per IP dalam 60 detik
+const passwordResetRateLimiter = new RateLimiterMemory({
+  points: 3,
+  duration: 60,
+});
+
 // Rate limiter untuk API umumnya
 // 100 request per IP dalam 15 menit
 const apiRateLimiter = new RateLimiterMemory({
@@ -31,5 +38,6 @@ const apiRateLimiter = new RateLimiterMemory({
 export {
   loginRateLimiter,
   changePasswordRateLimiter,
+  passwordResetRateLimiter,
   apiRateLimiter,
 };

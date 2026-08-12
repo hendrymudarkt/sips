@@ -1176,9 +1176,6 @@ export function useHarvestData() {
       fcba: emp.fcba || '',
       afdeling: emp.sectionname || '',
       kemandoran: emp.gangcode || '',
-      fieldcode: '',
-      tph: '',
-      noancak: '',
     }));
   };
 

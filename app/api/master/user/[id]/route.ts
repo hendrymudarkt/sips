@@ -50,7 +50,7 @@ export async function POST(
   const body = await req.json();
 
   const upstream = await fetch(`${BACKEND_URL}/api/user/${encodeURIComponent(id)}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
