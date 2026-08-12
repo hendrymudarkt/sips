@@ -406,7 +406,7 @@ export default function HarvestingUploadPage() {
   };
 
   if (initCheck && !isAdmin) return <AccessDenied />;
-  if (!initCheck) return <PageLayout />;
+  if (!initCheck) return <PageLayout>{null}</PageLayout>;
 
   return (
     <PageLayout>

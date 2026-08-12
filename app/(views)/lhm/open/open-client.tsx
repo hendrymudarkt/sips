@@ -7,7 +7,6 @@ import { useTranslations } from 'next-intl';
 import { AppDataTable } from '@/app/components/data/app-data-table';
 import AppTour from '@/app/components/feedback/app-tour';
 import type { TourStep } from '@/app/components/feedback/app-tour';
-import { Icon } from '@/app/components/ui/icons';
 import { useLocale } from '@/hooks/useLocale';
 import { isUnauthenticatedJson, logoutAndRedirect } from '@/utils/auth/authHelper';
 import { getTodayISO, formatDateDMY, getYesterdayISO } from '@/utils/helpers/datetime';
