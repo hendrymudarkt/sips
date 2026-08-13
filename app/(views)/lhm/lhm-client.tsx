@@ -914,7 +914,7 @@ export default function Lhm() {
             { key: 'export', label: tL('export'), icon: 'export', onClick: handleExport, variant: 'outline' },
           ]}
         >
-          <AppTour steps={tourSteps} storageKey="tour-lhm" onStepChange={handleTourStepChange} />
+          <AppTour steps={tourSteps} storageKey="tour-lhm" onStepChange={handleTourStepChange} btnClassName="join-item flex-1 sm:flex-none" />
         </Toolbar>
 
         {/* Quick Search + Total Cards */}
