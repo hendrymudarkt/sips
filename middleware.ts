@@ -84,6 +84,9 @@ export function middleware(request: NextRequest) {
   const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL
     ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
     : '';
+  const appOrigin = process.env.NEXT_PUBLIC_APP_URL
+    ? new URL(process.env.NEXT_PUBLIC_APP_URL).origin
+    : '';
   const gisOrigin = process.env.NEXT_PUBLIC_GIS_URL
     ? new URL(process.env.NEXT_PUBLIC_GIS_URL).origin
     : '';
@@ -95,11 +98,11 @@ export function middleware(request: NextRequest) {
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: https://img.daisyui.com ${backendOriginHttps}`.trim(),
     `font-src 'self' data:`,
-    `connect-src 'self'${siteOrigin ? ` ${siteOrigin}` : ''} ${backendOrigin} ${backendOriginHttps}`.trim(),
+    `connect-src 'self'${siteOrigin ? ` ${siteOrigin}` : ''}${appOrigin ? ` ${appOrigin}` : ''} ${backendOrigin} ${backendOriginHttps}`.trim(),
     `frame-src 'self' https://vercel.live${gisOrigin ? ` ${gisOrigin}${gisOriginHttps && gisOriginHttps !== gisOrigin ? ` ${gisOriginHttps}` : ''}` : ''}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    `form-action 'self' https://www.google.com${gisOrigin ? ` ${gisOrigin}` : ''}${siteOrigin ? ` ${siteOrigin}` : ''}`,
+    `form-action 'self' https://www.google.com${gisOrigin ? ` ${gisOrigin}` : ''}${siteOrigin ? ` ${siteOrigin}` : ''}${appOrigin ? ` ${appOrigin}` : ''}`,
   ].join('; ');
 
   response.headers.set('Content-Security-Policy', csp);

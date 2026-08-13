@@ -7,12 +7,14 @@ Set these values in the deployment environment:
 ```env
 BACKEND_URL=http://your-backend-url
 NEXT_PUBLIC_SITE_URL=https://your-site-url
+NEXT_PUBLIC_APP_URL=https://your-app-url
 NEXT_PUBLIC_GIS_URL=http://your-gis-url
 TRUSTED_IMAGE_DOMAINS=your-domain.com
 ```
 
 - `BACKEND_URL`: Backend API server (used server-side only via proxy routes).
-- `NEXT_PUBLIC_SITE_URL`: Public site URL for sitemap, archive links, and CSP.
+- `NEXT_PUBLIC_SITE_URL`: Public site URL for archive links, external app links, and CSP.
+- `NEXT_PUBLIC_APP_URL`: Public URL of this application, used for Open Graph/social preview metadata (`og:image`, `twitter:image`), sitemap, and CSP. Falls back to `NEXT_PUBLIC_SITE_URL` when not set.
 - `NEXT_PUBLIC_GIS_URL`: Internal GIS server URL for map links (optional — link hidden if not set).
 - `TRUSTED_IMAGE_DOMAINS`: Comma-separated hostname suffixes allowed by the image proxy.
 

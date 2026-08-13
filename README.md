@@ -84,6 +84,7 @@ Required environment variables:
 ```env
 BACKEND_URL=http://your-backend-url
 NEXT_PUBLIC_SITE_URL=https://your-site-url
+NEXT_PUBLIC_APP_URL=https://your-app-url
 NEXT_PUBLIC_GIS_URL=http://your-gis-url
 TRUSTED_IMAGE_DOMAINS=your-domain.com
 ```

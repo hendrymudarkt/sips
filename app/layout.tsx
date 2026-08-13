@@ -27,7 +27,7 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  const baseUrl = env.NEXT_PUBLIC_APP_URL || env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   return {
     metadataBase: new URL(baseUrl),
