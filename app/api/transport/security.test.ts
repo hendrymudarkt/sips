@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST as POST_LIST } from './route';
 import { PUT, DELETE, POST as POST_ID } from './[id]/route';
 import { NextRequest, NextResponse } from 'next/server';
-import { validateSecurity } from '@/lib/security';
+import { validateSecurity } from '@/lib/auth/security';
 
 vi.stubGlobal('fetch', vi.fn());
 
-vi.mock('@/lib/security', () => ({
+vi.mock('@/lib/auth/security', () => ({
   validateSecurity: vi.fn(),
 }));
 

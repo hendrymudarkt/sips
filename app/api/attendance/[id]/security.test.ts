@@ -5,6 +5,7 @@ import { GET, PUT, DELETE, POST } from './route';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { validateSecurity } from '@/lib/auth/security';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 
 vi.stubGlobal('fetch', vi.fn());
 
@@ -32,6 +33,7 @@ vi.mock('@/lib/api/apiProxy', () => ({
 }));
 
 describe('Attendance ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
+  vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');
   });
 
   const context = { params: Promise.resolve({ id: '123' }) };

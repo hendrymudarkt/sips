@@ -4,11 +4,7 @@ import { PATCH } from './route';
 
 import { NextRequest } from 'next/server';
 
-import { cookies } from 'next/headers';
-
-import { validateCsrfToken } from '@/lib/csrf';
-
-import { apiRateLimiter } from '@/lib/rateLimiter';
+import { validateSecurity } from '@/lib/auth/security';
 
 
 vi.stubGlobal('fetch', vi.fn());
@@ -20,34 +16,14 @@ vi.mock('@/utils/api/upstreamProxy', () => ({
 }));
 
 
-vi.mock('next/headers', () => ({
-  cookies: vi.fn(),
+vi.mock('@/lib/auth/security', () => ({
+  validateSecurity: vi.fn(),
 }));
 
-
-vi.mock('@/lib/csrf', () => ({
-  validateCsrfToken: vi.fn(),
-}));
-
-
-vi.mock('@/lib/rateLimiter', () => ({
-  apiRateLimiter: {
-    consume: vi.fn(),
-  },
-}));
-
-describe('Attendance Status API Security', () => {beforeEach(() => {vi.clearAllMocks();
-
-
-    vi.mocked(cookies).mockReturnValue({
-      // @ts-expect-error - mock internal cookies behavior
-      get: (name: string) => (name === 'csrf_token' ? { value: 'valid-token' } : undefined),
-    } as unknown as ReturnType<typeof cookies>);
-
-    vi.mocked(validateCsrfToken).mockReturnValue(true);
-
-    vi.mocked(apiRateLimiter.consume).mockResolvedValue({});
-  });
+describe('Attendance Status API Security', () => {beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(validateSecurity).mockResolvedValue(null);
+});
 
 
   it('should return generic error message and not leak upstream details on failure', async () => {

@@ -141,11 +141,13 @@ export const nameSchema = z
   .regex(/^[a-zA-Z0-9\s\-\.,()']+$/, 'Nama mengandung karakter yang tidak diizinkan');
 
 // Schema untuk deskripsi/keterangan
+// SECURITY: Plain string, no transform. The old sanitizeHtml transform
+// corrupted legitimate data ("<", "--", "OR", etc.) and a regex blacklist is
+// bypassable anyway — React escapes on output, and the backend validates.
 export const descriptionSchema = z
   .string()
   .min(1, 'Deskripsi tidak boleh kosong')
-  .max(1000, 'Deskripsi maksimal 1000 karakter')
-  .transform(sanitizeHtml);
+  .max(1000, 'Deskripsi maksimal 1000 karakter');
 
 // ============================================================================
 // SCHEMAS UNTUK MODULE SPESIFIK

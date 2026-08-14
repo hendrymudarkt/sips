@@ -23,13 +23,13 @@ const gisOrigin = process.env.NEXT_PUBLIC_GIS_URL
 
 const cspDirectives = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline'",
   // All HTTP images are proxied through /api/system/image-proxy ('self').
   // HTTPS origins listed as fallback if proxy edge case fails.
   `img-src 'self' data: blob: https://img.daisyui.com ${backendOriginHttps}`.trim(),
   `connect-src 'self'${siteOrigin ? ` ${siteOrigin}` : ''} ${backendOrigin} ${backendOriginHttps}`.trim(),
-  "frame-src 'self' https://vercel.live",
+  "frame-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   `form-action 'self' https://www.google.com${gisOrigin ? ` ${gisOrigin}` : ''}${siteOrigin ? ` ${siteOrigin}` : ''}`,

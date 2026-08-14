@@ -3,6 +3,7 @@ import {
 import { GET, PUT } from './route';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSecurity } from '@/lib/auth/security';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 vi.stubGlobal('fetch', vi.fn());
 vi.mock('@/lib/auth/security', () => ({  validateSecurity: vi.fn(),}));
 vi.mock('@/utils/api/upstreamProxy', () => ({  BACKEND_URL: 'http://trusted-backend.com',  getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),}));
@@ -11,7 +12,8 @@ vi.mock('@/lib/api/apiProxy', () => ({  authHeaders: vi.fn(() => ({ Authorizatio
 vi.mock('@/lib/utils/inputSanitizer', () => ({  validateInput: vi.fn(() => ({ success: true, data: { test: 'value' } })),  uploadSubmitSchema: {},}));
 describe('Attendance Upload API Security', () => {
   beforeEach(() => {
-  vi.clearAllMocks();  });
+  vi.clearAllMocks();
+  vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');  });
   describe('GET handler', () => {
   it('should return 401 if no token', async () => {      const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
       vi.mocked(getTokenFromCookie).mockResolvedValue(undefined);      const req = new NextRequest('http://localhost/api/attendance/upload');      const res = await GET(req);      expect(res.status).toBe(401);    });  });

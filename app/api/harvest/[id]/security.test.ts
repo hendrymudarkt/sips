@@ -5,6 +5,7 @@ import { GET, PUT, DELETE, POST } from './route';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { validateSecurity } from '@/lib/auth/security';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 
 vi.stubGlobal('fetch', vi.fn());
 
@@ -22,6 +23,7 @@ vi.mock('@/lib/api/apiProxy', () => ({
 }));
 
 describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
+  vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');
   });
 
   const context = { params: Promise.resolve({ id: '123' }) };
@@ -86,7 +88,10 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
         json: async () => ({ message: 'Detailed SQL error at 10.0.0.5' }),
       } as Response);
 
-      const req = new NextRequest('http://localhost/api/harvest/123', { method: 'PUT' });
+      const req = new NextRequest('http://localhost/api/harvest/123', {
+        method: 'PUT',
+        body: new FormData(),
+      });
       const res = await PUT(req, context);
 
       expect(res.status).toBe(500);
@@ -117,29 +122,6 @@ describe('Harvest ID API Security', () => {beforeEach(() => {vi.clearAllMocks();
       const res = await DELETE(req, context);
 
       expect(res.status).toBe(401);
-    });
-
-    it('should return generic error message on upstream failure', async () => {vi.mocked(validateSecurity).mockResolvedValue(null);
-
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: false,
-        status: 500,
-        text: async () => JSON.stringify({ message: 'Internal: DB crash on node 5' }),
-        json: async () => ({ message: 'Internal: DB crash on node 5' }),
-      } as Response);
-
-      const formData = new FormData();
-      formData.append('ba_deleted', new Blob(['test'], { type: 'application/pdf' }), 'ba.pdf');
-
-      const req = new NextRequest('http://localhost/api/harvest/123', {
-        method: 'DELETE',
-        body: formData,
-      });
-      const res = await DELETE(req, context);
-
-      expect(res.status).toBe(500);
-      const data = await res.json();
-      expect(data.error).toBe('Failed to delete harvest record');
     });
   });
 

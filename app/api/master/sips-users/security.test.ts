@@ -2,13 +2,15 @@ import {
   describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from './route';
 import { NextRequest } from 'next/server';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 vi.stubGlobal('fetch', vi.fn());
 vi.mock('@/utils/api/upstreamProxy', () => ({  BACKEND_URL: 'http://trusted-backend.com',  getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),}));
 vi.mock('@/utils/api/requestScope', () => ({  applyUserDataScope: vi.fn((_req, params) => params),}));
 vi.mock('@/lib/api/apiProxy', () => ({  authHeaders: vi.fn(() => ({ Authorization: 'Bearer valid-token' })),  parseJsonSafe: vi.fn((res) => res.json().then((data: unknown) => ({ data, parseError: false }))),  isRecord: vi.fn((v) => typeof v === 'object' && v !== null),}));
 describe('SIPS Users API Security', () => {
   beforeEach(() => {
-  vi.clearAllMocks();  });
+  vi.clearAllMocks();
+  vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');  });
   it('should return 401 if no token', async () => {    const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
     vi.mocked(getTokenFromCookie).mockResolvedValue(undefined);    const req = new NextRequest('http://localhost/api/master/sips-users');    const res = await GET(req);    expect(res.status).toBe(401);    const data = await res.json();    expect(data.error).toBe('Unauthenticated');  });
   it('should return generic error message on upstream failure', async () => {

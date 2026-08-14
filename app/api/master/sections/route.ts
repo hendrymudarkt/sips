@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { authHeaders, extractDataArray } from '@/lib/api/apiProxy';
 import { applyUserDataScope } from '@/utils/api/requestScope';
+import { CookieName } from '@/lib/constants';
 
 const ALLOWED_PARAMS = ['fccode', 'fcba'];
 
@@ -20,8 +21,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const params = applyUserDataScope(req, new URLSearchParams(req.nextUrl.searchParams.toString()));
 
+  // SECURITY: Only FCBA-level roles (MGR/KSI/ADM) may explicitly target another
+  // fcba (destination/assistance). Lower roles keep the fcba their scope assigns;
+  // allowing them to override scoping was a CWE-285 bypass.
   if (hasExplicitFcba) {
-    params.set('fcba', req.nextUrl.searchParams.get('fcba')!);
+    const level = (req.cookies.get(CookieName.SECURE_USER_LEVEL)?.value || '').toUpperCase();
+    if (level === 'MGR' || level === 'KSI' || level === 'ADM') {
+      params.set('fcba', req.nextUrl.searchParams.get('fcba')!);
+    }
   }
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

@@ -3,6 +3,7 @@ import {
 import { GET } from './route';
 import { NextRequest, NextResponse } from 'next/server';
 import { validateSecurity } from '@/lib/auth/security';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 vi.stubGlobal('fetch', vi.fn());
 vi.mock('@/lib/auth/security', () => ({  validateSecurity: vi.fn(),}));
 vi.mock('@/utils/api/upstreamProxy', () => ({  BACKEND_URL: 'http://trusted-backend.com',  getTokenFromCookie: vi.fn(() => Promise.resolve('valid-token')),}));
@@ -10,7 +11,12 @@ vi.mock('next/headers', () => ({  cookies: vi.fn(),}));
 vi.mock('@/lib/constants', () => ({  UserLevel: { ADMIN: 'ADMIN' },}));
 describe('Token API Security', () => {
   beforeEach(() => {
-  vi.clearAllMocks();  });
+  vi.clearAllMocks();
+  // clearAllMocks() does NOT reset implementations; restore defaults so the
+  // "no token" test cannot leak undefined into the following tests.
+  vi.mocked(validateSecurity).mockResolvedValue(null);
+  vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');
+  });
   it('should return security error if validateSecurity fails', async () => {    const errorResponse = new Response(JSON.stringify({ ok: false, error: 'Security fail' }), {      status: 403,    }) as unknown as NextResponse;
     vi.mocked(validateSecurity).mockResolvedValue(errorResponse);    const req = new NextRequest('http://localhost/api/auth/token');    const res = await GET(req);    expect(res.status).toBe(403);    const data = await res.json();    expect(data.error).toBe('Security fail');  });
   it('should return 401 if no token', async () => {

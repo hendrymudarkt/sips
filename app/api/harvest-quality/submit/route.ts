@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { authHeaders, parseJsonSafe, unauthorizedResponse } from '@/lib/api/apiProxy';
-import { harvestSubmitSchema, validateInput, sanitizeObject } from '@/lib/utils/inputSanitizer';
+import { harvestSubmitSchema, validateInput } from '@/lib/utils/inputSanitizer';
 import { validateSecurity } from '@/lib/auth/security';
 
 export const dynamic = 'force-dynamic';
@@ -26,12 +26,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Forward ke backend dengan sanitized data
-    const sanitizedData = sanitizeObject(validation.data);
+    // Forward validated data to backend (zod-validated; no regex stripping)
     const response = await fetch(`${BACKEND_URL}/api/uploads/harvestingquality`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify(sanitizedData),
+      body: JSON.stringify(validation.data),
     });
 
     const { data, parseError } = await parseJsonSafe(response);

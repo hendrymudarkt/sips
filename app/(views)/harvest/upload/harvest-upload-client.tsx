@@ -405,7 +405,7 @@ export default function HarvestingUploadPage() {
     }
   };
 
-  if (initCheck && !isAdmin) return <AccessDenied />;
+  if (initCheck && !isAdmin) return <AccessDenied message={t('accessDeniedDesc')} />;
   if (!initCheck) return <PageLayout>{null}</PageLayout>;
 
   return (

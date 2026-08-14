@@ -39,9 +39,9 @@ describe('Gangs API Security', () => {
     const req = new NextRequest(
       'http://localhost/api/gangs?fcba=ATTACKER_FCBA&afdeling=ATTACKER_AFD'
     );
-    req.cookies.set('user_Level', UserLevel.MANDOR);
-    req.cookies.set('user_Fcba', 'MY_FCBA');
-    req.cookies.set('user_Afdeling', 'MY_AFD');
+    req.cookies.set('SECURE_USER_LEVEL', UserLevel.MANDOR);
+    req.cookies.set('SECURE_USER_FCBA', 'MY_FCBA');
+    req.cookies.set('SECURE_USER_AFDELING', 'MY_AFD');
 
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,

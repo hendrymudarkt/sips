@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { authHeaders, parseJsonSafe, unauthorizedResponse } from '@/lib/api/apiProxy';
-import { lhmSubmitSchema, validateInput, sanitizeObject } from '@/lib/utils/inputSanitizer';
+import { lhmSubmitSchema, validateInput } from '@/lib/utils/inputSanitizer';
 import { validateSecurity } from '@/lib/auth/security';
 
 export const dynamic = 'force-dynamic';
@@ -23,12 +23,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ success: false, message: validation.error }, { status: 400 });
     }
 
-    // Forward ke backend dengan sanitized data
-    const sanitizedData = sanitizeObject(validation.data);
+    // Forward validated data to backend (zod-validated; no regex stripping)
     const response = await fetch(`${BACKEND_URL}/api/uploads/lhm_data/mobile`, {
       method: 'POST',
       headers: authHeaders(token),
-      body: JSON.stringify(sanitizedData),
+      body: JSON.stringify(validation.data),
     });
 
     const { data, parseError } = await parseJsonSafe(response);

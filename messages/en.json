@@ -537,6 +537,7 @@
   "HarvestUpload": {
     "title": "Harvesting SPB Upload",
     "titleTooltip": "View and upload FFB (SPB) harvest data from external API",
+    "accessDeniedDesc": "This page can only be accessed by users with ADM level.",
     "showFilters": "Show Filters",
     "hideFilters": "Hide Filters",
     "refresh": "Refresh",

@@ -5,6 +5,10 @@
  * @see https://github.com/animir/node-rate-limiter-flexible
  */
 
+// ponytail: RateLimiterMemory is per-instance. With >1 Coolify replica the
+// limit is independently enforced per container (rotating instances bypasses
+// it) and counters reset on cold start. Switch to RateLimiterRedis (ioredis)
+// only when the deployment scales beyond a single instance.
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 
 // Rate limiter untuk login attempts

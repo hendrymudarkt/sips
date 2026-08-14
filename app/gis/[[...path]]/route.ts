@@ -42,6 +42,13 @@ const FORWARDED_HEADERS = [
   'cache-control',
 ];
 
+// Runtime URLs are built inside upstream JS (e.g. fetch('/api/fcba') or the
+// maplibre-gl <link> it injects for its CSS). The HTML-body rewrite above can't
+// see those, and <base href="/gis/"> only affects relative (non-root-absolute)
+// URLs, so root-absolute URLs built at runtime would hit this origin and 404.
+// Inject a small bootstrap that rewrites them at the source.
+const RUNTIME_REWRITE_SNIPPET = `<script>(function(){function r(u){if(typeof u!=='string')return u;return u.replace(/^(?:https?:\\/\\/[^\\/]+)?\\/(asset|api|data)\\//,'/gis/$1/')}function f(x){if(x.href)x.href=r(x.href);if(x.src)x.src=r(x.src);if(x.getAttribute&&x.getAttribute('srcset'))x.setAttribute('srcset',x.getAttribute('srcset').split(',').map(function(s){var p=s.trim().split(/\\s+/);return r(p[0])+(p[1]?' '+p[1]:'')}).join(', '))}var o=window.fetch;window.fetch=function(i,o2){return o.call(this,r(i),o2)};['head','body'].forEach(function(tag){var el=document[tag];if(!el)return;var ac=el.appendChild;el.appendChild=function(n){if(n&&n.matches)f(n);return ac.call(el,n)}});new MutationObserver(function(ms){for(var m=0;m<ms.length;m++)for(var n=0;n<ms[m].addedNodes.length;n++){var e=ms[m].addedNodes[n];if(e.querySelectorAll){if(e.matches&&e.matches('link[href],script[src],img[src],source[srcset],source[src]'))f(e);e.querySelectorAll('link[href],script[src],img[src],source[srcset],source[src]').forEach(f)}}}).observe(document.documentElement,{childList:true,subtree:true})})();</script>`;
+
 function rewriteBody(body: string): string {
   // 1) Same-origin absolute GIS URLs (http://gis.skj.my.id/...) -> /gis/...
   let out = body.replace(absoluteGisRe, '/gis');
@@ -53,10 +60,20 @@ function rewriteBody(body: string): string {
   if (!/<base\b/i.test(out)) {
     out = out.replace(/<head(?=[\s>])/i, `<head><base href="/gis/">`);
   }
+  // 4) Rewrite runtime-injected root-absolute URLs (fetch + DOM nodes).
+  out = out.replace(/<head(?=[\s>])/i, `<head>${RUNTIME_REWRITE_SNIPPET}`);
   return out;
 }
 
 async function proxy(req: NextRequest, method: 'GET' | 'POST' | 'HEAD') {
+  // SECURITY: The GIS proxy is an unauthenticated reverse proxy to an internal
+  // host. Gate it behind the httpOnly auth_token cookie so only logged-in users
+  // can reach the upstream or use it as an open relay (CWE-863). Middleware
+  // excludes /gis by design (framing + no login redirect), so the gate is here.
+  if (!req.cookies.get('auth_token')?.value) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   const pathname = req.nextUrl.pathname.replace(/^\/gis\/?/, '');
   const search = req.nextUrl.search;
   const upstream = `${GIS_BASE}/${pathname || ''}${search}`;

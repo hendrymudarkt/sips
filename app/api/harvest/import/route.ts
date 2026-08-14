@@ -3,7 +3,7 @@ import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { parseJsonSafe, unauthorizedResponse } from '@/lib/api/apiProxy';
 import { validateSecurity } from '@/lib/auth/security';
 import { CookieName } from '@/lib/constants';
-import { harvestImportSchema, validateInput, sanitizeObject } from '@/lib/utils/inputSanitizer';
+import { harvestImportSchema, validateInput } from '@/lib/utils/inputSanitizer';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,12 +19,8 @@ const SKIP_FIELDS = new Set([
   '_brondolNum', '_panjangNum',
 ]);
 
-function getCookieValue(req: NextRequest, names: string[]) {
-  for (const name of names) {
-    const value = req.cookies.get(name)?.value;
-    if (value) return value;
-  }
-  return '';
+function getCookieValue(req: NextRequest, name: string) {
+  return req.cookies.get(name)?.value || '';
 }
 
 function buildFormData(record: Record<string, unknown>): FormData {
@@ -53,10 +49,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = await getTokenFromCookie();
   if (!token) return unauthorizedResponse();
 
-  const userLevel = getCookieValue(req, [
-    CookieName.SECURE_USER_LEVEL,
-    'user_Level', 'user_LEVEL', 'user_level',
-  ]).toUpperCase();
+  const userLevel = getCookieValue(req, CookieName.SECURE_USER_LEVEL).toUpperCase();
 
   if (!ALLOWED_LEVELS.has(userLevel)) {
     return NextResponse.json(
@@ -65,10 +58,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const userFcba = getCookieValue(req, [
-    CookieName.SECURE_USER_FCBA,
-    'user_Fcba', 'user_FCBA', 'user_fcba',
-  ]);
+  const userFcba = getCookieValue(req, CookieName.SECURE_USER_FCBA);
 
   let body: unknown;
   try {
@@ -97,7 +87,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const sanitizedRecords = rawRecords.map(r => sanitizeObject(r));
+  const sanitizedRecords = rawRecords;
 
   if (userLevel !== 'ADM' && userFcba) {
     for (const record of sanitizedRecords) {

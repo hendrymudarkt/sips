@@ -6,7 +6,6 @@
  * Principles applied: DRY, SoC, SSOT, Fail Fast, KISS
  */
 import { NextResponse } from 'next/server';
-import { sanitizeObject } from '@/lib/utils/inputSanitizer';
 
 // ─── Type guards ──────────────────────────────────────────────────────────────
 
@@ -139,15 +138,15 @@ export async function proxyPost(
     );
   }
 
-  // === INPUT SANITIZATION ===
-  // Note: CSRF validation removed from proxy for Edge Runtime compatibility
-  // Each API route handles its own CSRF validation
-  const sanitizedPayload = payload.map(sanitizeObject);
-
+  // SECURITY: Input is already validated with zod schemas at each route.
+  // Do NOT blanket-strip payload strings here: the old sanitizeObject regex
+  // was bypassable AND silently corrupted legitimate data (e.g. keterangan
+  // containing "<", "--", "OR"). React escapes on output; the Laravel
+  // backend is the final authority for business-rule validation.
   const response = await fetch(upstreamUrl, {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ data: sanitizedPayload }),
+    body: JSON.stringify({ data: payload }),
   });
 
   const { data, parseError } = await parseJsonSafe(response);

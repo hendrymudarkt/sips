@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from './route';
 
 import { NextRequest } from 'next/server';
+import { getTokenFromCookie } from '@/utils/api/upstreamProxy';
 
 vi.stubGlobal('fetch', vi.fn());
 
@@ -12,6 +13,7 @@ vi.mock('@/utils/api/upstreamProxy', () => ({
 }));
 
 describe('User Detail API Security', () => {beforeEach(() => {vi.clearAllMocks();
+  vi.mocked(getTokenFromCookie).mockResolvedValue('valid-token');
   });
 
   const context = { params: Promise.resolve({ id: '123' }) };

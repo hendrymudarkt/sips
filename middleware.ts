@@ -57,9 +57,9 @@ export function middleware(request: NextRequest) {
 
   const response = NextResponse.next();
 
-  // Answer OPTIONS (e.g. the Vercel Feedback widget preflight) with 204 instead
-  // of letting Next return 400/405 for page routes. Keep /api preflights in the
-  // CORS block below so allowed origins get the access-control headers.
+  // Answer OPTIONS preflight with 204 instead of letting Next return 400/405
+  // for page routes. Keep /api preflights in the CORS block below so allowed
+  // origins get the access-control headers.
   if (request.method === 'OPTIONS' && !pathname.startsWith('/api/')) {
     return new NextResponse(null, { status: 204 });
   }
@@ -94,12 +94,12 @@ export function middleware(request: NextRequest) {
 
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
     `img-src 'self' data: blob: https://img.daisyui.com ${backendOriginHttps}`.trim(),
     `font-src 'self' data:`,
     `connect-src 'self'${siteOrigin ? ` ${siteOrigin}` : ''}${appOrigin ? ` ${appOrigin}` : ''} ${backendOrigin} ${backendOriginHttps}`.trim(),
-    `frame-src 'self' https://vercel.live${gisOrigin ? ` ${gisOrigin}${gisOriginHttps && gisOriginHttps !== gisOrigin ? ` ${gisOriginHttps}` : ''}` : ''}`,
+    `frame-src 'self'${gisOrigin ? ` ${gisOrigin}${gisOriginHttps && gisOriginHttps !== gisOrigin ? ` ${gisOriginHttps}` : ''}` : ''}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     `form-action 'self' https://www.google.com${gisOrigin ? ` ${gisOrigin}` : ''}${siteOrigin ? ` ${siteOrigin}` : ''}${appOrigin ? ` ${appOrigin}` : ''}`,
@@ -168,12 +168,9 @@ export function middleware(request: NextRequest) {
   }
 
   // Server-side role-based access control
-  // SECURITY: Prioritize secure httpOnly cookies for role verification (CWE-807)
-  const levelRaw =
-    request.cookies.get(CookieName.SECURE_USER_LEVEL)?.value ||
-    request.cookies.get(CookieName.USER_LEVEL)?.value ||
-    '';
-  const level = normalizeLevel(levelRaw);
+  // SECURITY: Read ONLY the httpOnly SECURE_* cookie. The client-readable
+  // user_Level cookie is tamperable and must not gate routes (CWE-807).
+  const level = normalizeLevel(request.cookies.get(CookieName.SECURE_USER_LEVEL)?.value || '');
 
   const redirectForbidden = () => {
     const redirectRes = NextResponse.redirect(new URL('/dashboard', origin));

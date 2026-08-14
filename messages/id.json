@@ -537,6 +537,7 @@
   "HarvestUpload": {
     "title": "Upload Harvesting SPB",
     "titleTooltip": "Tampilkan dan upload data panenan TBS dari external API",
+    "accessDeniedDesc": "Halaman ini hanya dapat diakses oleh user dengan level ADM.",
     "showFilters": "Tampilkan Filter",
     "hideFilters": "Sembunyikan Filter",
     "refresh": "Refresh",

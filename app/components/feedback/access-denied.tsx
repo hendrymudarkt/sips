@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
  * 🎨 Palette Enhancement: AccessDenied component.
  * Provides a localized, accessible, and visually polished screen for unauthorized access.
  */
-export function AccessDenied() {
+export function AccessDenied({ message }: { message?: string }) {
   const t = useTranslations('Common');
 
   return (
@@ -41,7 +41,7 @@ export function AccessDenied() {
           </h1>
 
           <p className="text-base text-base-content/60 leading-relaxed mb-10">
-            {t('accessDeniedDesc')}
+            {message ?? t('accessDeniedDesc')}
           </p>
 
           <div className="card-actions w-full">
