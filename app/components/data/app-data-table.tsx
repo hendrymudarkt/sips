@@ -19,7 +19,7 @@ interface AppDataTableProps<T> extends Partial<TableProps<T>> {
   loading?: boolean;
   namespace?: string;
   onClearSearch?: () => void;
-  keyField?: string;
+  keyField?: keyof T & string;
 }
 
 export function AppDataTable<T>({
@@ -28,7 +28,7 @@ export function AppDataTable<T>({
   loading,
   namespace,
   onClearSearch,
-  keyField = '_rowKey',
+  keyField = '_rowKey' as keyof T & string,
   pagination = true,
   paginationPerPage = 100,
   paginationRowsPerPageOptions = [100, 500, 1000, 5000],

@@ -33,7 +33,7 @@
     "next-intl": "^4.8.1",
     "rate-limiter-flexible": "^5.0.5",
     "react": "^19.1.0",
-    "react-data-table-component": "^7.7.0",
+    "react-data-table-component": "^8.8.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.6.0",
     "zod": "^4.4.3"
