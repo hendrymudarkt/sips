@@ -230,6 +230,7 @@ export default function PengangkutanPage() {
       {
         name: <span title={t('colKendaraanTooltip')}>{t('colKendaraan')}</span>,
         sortable: true,
+        selector: r => r.kode_kendaraan ?? '',
         width: '200px',
         cell: r => {
           const kode = r.kode_kendaraan || '-';

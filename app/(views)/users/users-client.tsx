@@ -234,18 +234,21 @@ export default function UsersClient() {
       {
         name: t('username'),
         sortable: true,
+        selector: r => r.username,
         width: '130px',
         cell: row => <span className="block truncate" title={row.username}>{row.username ?? '-'}</span>,
       },
       {
         name: t('fullname'),
         sortable: true,
+        selector: r => r.fullname,
         width: '180px',
         cell: row => <span className="block truncate" title={row.fullname}>{row.fullname ?? '-'}</span>,
       },
       {
         name: t('email'),
         sortable: true,
+        selector: r => r.email,
         width: '190px',
         cell: row =>
           row.email ? (
@@ -263,6 +266,7 @@ export default function UsersClient() {
       {
         name: t('phone'),
         sortable: true,
+        selector: r => r.phone,
         width: '120px',
         cell: row =>
           row.phone ? (
@@ -283,6 +287,7 @@ export default function UsersClient() {
       {
         name: <span className="block text-center w-full">FCBA</span>,
         sortable: true,
+        selector: r => r.fcba,
         width: '60px',
         style: { textAlign: 'center' },
         cell: row => <span className="truncate">{row.fcba ?? '-'}</span>,
@@ -290,18 +295,21 @@ export default function UsersClient() {
       {
         name: t('afdeling'),
         sortable: true,
+        selector: r => r.afdeling,
         width: '90px',
         cell: row => <span className="block truncate" title={row.afdeling}>{row.afdeling ?? '-'}</span>,
       },
       {
         name: t('gangcode'),
         sortable: true,
+        selector: r => r.gangcode,
         width: '90px',
         cell: row => <span className="block truncate" title={row.gangcode}>{row.gangcode ?? '-'}</span>,
       },
       {
         name: <span className="block text-center w-full">{t('position')}</span>,
         sortable: true,
+        selector: r => r.position,
         width: '150px',
         cell: row => (
           <div className="flex items-center gap-1 min-w-0">
@@ -313,6 +321,7 @@ export default function UsersClient() {
       {
         name: <span className="block text-center w-full">{t('status')}</span>,
         sortable: true,
+        selector: r => r.status,
         width: '80px',
         style: { textAlign: 'center' },
         cell: row => <StatusBadge status={row.status} label={row.status === 'Y' ? t('active') : t('inactive')} />,
