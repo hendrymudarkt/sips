@@ -64,6 +64,6 @@ export async function fetchMasterUsers(params: Record<string, string>): Promise<
 
 export async function fetchVehicles(): Promise<Response> {
   const url = new URL('/api/master/sips-kendaraan', window.location.origin);
-  url.searchParams.append('vehiclegroupcode', 'DT,TR,MB');
+  url.searchParams.append('vehiclegroupcode', 'DT,TR,MB,RT');
   return fetch(url.toString(), { credentials: 'include' });
 }

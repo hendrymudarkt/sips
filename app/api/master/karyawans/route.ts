@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { BACKEND_URL } from '@/utils/api/upstreamProxy';
 import { authHeaders, extractDataArray } from '@/lib/api/apiProxy';
 import { applyUserDataScope } from '@/utils/api/requestScope';
+import { CookieName } from '@/lib/constants';
 
 interface KaryawanRow {
   fcba?: string | number | null;
@@ -33,6 +34,14 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   }
 
   applyUserDataScope(req, upstreamParams);
+
+  const hasExplicitFcba = req.nextUrl.searchParams.has('fcba');
+  if (hasExplicitFcba) {
+    const level = (req.cookies.get(CookieName.SECURE_USER_LEVEL)?.value || '').toUpperCase();
+    if (level === 'MGR' || level === 'KSI' || level === 'ADM') {
+      upstreamParams.set('fcba', req.nextUrl.searchParams.get('fcba')!);
+    }
+  }
 
   const url = `${BACKEND_URL}/api/apps/karyawans${upstreamParams.toString() ? `?${upstreamParams}` : ''}`;
 

@@ -17,6 +17,10 @@ export const QueryKeys = {
     ) as unknown as string[],
   TRANSPORT: (filters?: Record<string, string>) =>
     ['pengangkutan', filters].filter(Boolean) as unknown as string[],
+  VEHICLE_RENTS: (filters?: Record<string, string>) =>
+    ['vehicle-rents', filters].filter(Boolean) as unknown as string[],
+  CONTRACTS: (tanggal?: string, fcba?: string) =>
+    ['contracts', tanggal, fcba].filter(Boolean) as unknown as string[],
   USERS: (filters?: Record<string, string>) =>
     ['sips-users', filters].filter(Boolean) as unknown as string[],
   BUSINESS_UNITS: () => ['businessUnits'],

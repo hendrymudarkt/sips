@@ -198,6 +198,17 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Restrict Vehicle Rent access to permitted roles.
+  if (pathname.startsWith('/vehicle-rent')) {
+    if (
+      level !== UserLevel.ADMIN &&
+      level !== UserLevel.KSI &&
+      level !== UserLevel.KRA
+    ) {
+      return redirectForbidden();
+    }
+  }
+
   return response;
 }
 

@@ -425,6 +425,68 @@ export type TransportFilters = Partial<{
   flag: string;
 }>;
 
+export type VehicleRent = {
+  _rowKey?: string;
+  _displayDate?: string;
+  _displayValidFrom?: string;
+  _displayValidUntil?: string;
+  _searchContent?: string;
+  id: string | number;
+  contract_no?: string | null;
+  fcba?: string | null;
+  vehicle_code?: string | null;
+  vehicle_name?: string | null;
+  registration_no?: string | null;
+  nik?: string | null;
+  driver_name?: string | null;
+  tanggal?: string | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type VehicleRentFormState = {
+  id: string;
+  tanggal: string;
+  contract_no: string;
+  fcba: string;
+  vehicle_code: string;
+  vehicle_name: string;
+  registration_no: string;
+  nik: string;
+  driver_name: string;
+  valid_from: string;
+  valid_until: string;
+};
+
+export const initialVehicleRentForm: VehicleRentFormState = {
+  id: '',
+  tanggal: '',
+  contract_no: '',
+  fcba: '',
+  vehicle_code: '',
+  vehicle_name: '',
+  registration_no: '',
+  nik: '',
+  driver_name: '',
+  valid_from: '',
+  valid_until: '',
+};
+
+export type VehicleRentFilters = Partial<{
+  tanggal: string;
+  contract_no: string;
+  fcba: string;
+  vehicle_code: string;
+  vehicle_name: string;
+  registration_no: string;
+  nik: string;
+  driver_name: string;
+  valid_from: string;
+  valid_until: string;
+}>;
+
 export type DeleteTarget = {
   id: string;
   nopengangkutan: string;

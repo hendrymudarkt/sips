@@ -20,6 +20,8 @@ interface AppTourProps {
   storageKey?: string;
   /** Called every time the active step changes (before highlight is applied) */
   onStepChange?: (stepIndex: number) => void;
+  /** Called when the tour is dismissed/finished (skip, close, finish) */
+  onClose?: () => void;
   /** Additional class for the trigger button */
   btnClassName?: string;
 }
@@ -31,13 +33,13 @@ const POSITION_CLASSES: Record<string, string> = {
   bottom: 'items-end justify-center pb-4 sm:pb-8',
 };
 
-export default function AppTour({ steps, storageKey, onStepChange, btnClassName = '' }: AppTourProps) {
+export default function AppTour({ steps, storageKey, onStepChange, onClose, btnClassName = '' }: AppTourProps) {
   const t = useTranslations('Tour');
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [box, setBox] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const highlightRef = useRef<HTMLElement | null>(null);
-  const prevPositionRef = useRef<string | null>(null);
-  const prevZIndexRef = useRef<string | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const modalContainerRef = useRef<HTMLDivElement>(null);
   const isFirstRender = useRef(true);
@@ -63,22 +65,15 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
 
   /* ---- Clean highlight helper ---- */
   const removeHighlight = useCallback(() => {
-    if (highlightRef.current) {
-      highlightRef.current.classList.remove('tour-highlight');
-      if (prevPositionRef.current !== null) {
-        highlightRef.current.style.position = prevPositionRef.current;
-      } else {
-        highlightRef.current.style.removeProperty('position');
-      }
-      if (prevZIndexRef.current !== null) {
-        highlightRef.current.style.zIndex = prevZIndexRef.current;
-      } else {
-        highlightRef.current.style.removeProperty('z-index');
-      }
-      highlightRef.current = null;
-      prevPositionRef.current = null;
-      prevZIndexRef.current = null;
-    }
+    highlightRef.current = null;
+    setBox(null);
+  }, []);
+
+  const updateBox = useCallback(() => {
+    const target = highlightRef.current;
+    if (!target) return;
+    const r = target.getBoundingClientRect();
+    setBox({ top: r.top, left: r.left, width: r.width, height: r.height });
   }, []);
 
   /* ---- Apply highlight to current target ---- */
@@ -89,18 +84,23 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
       const target = document.querySelector(selector) as HTMLElement | null;
       if (!target) return;
 
-      prevPositionRef.current = target.style.position;
-      prevZIndexRef.current = target.style.zIndex;
-
-      target.classList.add('tour-highlight');
-      target.style.position = 'relative';
-      target.style.zIndex = '9999';
       highlightRef.current = target;
-
+      updateBox();
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(updateBox, 450);
     },
-    [removeHighlight]
+    [removeHighlight, updateBox]
   );
+
+  /* ---- Track the target while it moves (scroll/resize) ---- */
+  useEffect(() => {
+    window.addEventListener('scroll', updateBox, true);
+    window.addEventListener('resize', updateBox);
+    return () => {
+      window.removeEventListener('scroll', updateBox, true);
+      window.removeEventListener('resize', updateBox);
+    };
+  }, [updateBox]);
 
   /* ---- React to step changes ---- */
   useEffect(() => {
@@ -126,10 +126,11 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
       setCurrentStep(prev => prev + 1);
     } else {
       persistDismiss();
+      onClose?.();
       setIsOpen(false);
       setCurrentStep(0);
     }
-  }, [currentStep, steps.length, persistDismiss]);
+  }, [currentStep, steps.length, persistDismiss, onClose]);
 
   const handlePrev = useCallback(() => {
     if (currentStep > 0) {
@@ -139,13 +140,40 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
 
   const handleSkip = useCallback(() => {
     persistDismiss();
+    onClose?.();
     setIsOpen(false);
     setCurrentStep(0);
-  }, [persistDismiss]);
+  }, [persistDismiss, onClose]);
+
+  const dragStartRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const offsetRef = useRef({ x: 0, y: 0 });
 
   const handleOpen = useCallback(() => {
+    offsetRef.current = { x: 0, y: 0 };
+    setOffset({ x: 0, y: 0 });
     setCurrentStep(0);
     setIsOpen(true);
+  }, []);
+
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    const handle = e.currentTarget as HTMLElement;
+    handle.setPointerCapture(e.pointerId);
+    dragStartRef.current = { x: e.clientX, y: e.clientY, ox: offsetRef.current.x, oy: offsetRef.current.y };
+  }, []);
+
+  const moveDrag = useCallback((e: React.PointerEvent) => {
+    const ds = dragStartRef.current;
+    if (!ds) return;
+    const next = { x: ds.ox + (e.clientX - ds.x), y: ds.oy + (e.clientY - ds.y) };
+    offsetRef.current = next;
+    setOffset(next);
+  }, []);
+
+  const endDrag = useCallback((e: React.PointerEvent) => {
+    const handle = e.currentTarget as HTMLElement;
+    if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+    dragStartRef.current = null;
   }, []);
 
   useEffect(() => {
@@ -196,8 +224,23 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
             ref={modalContainerRef}
             tabIndex={-1}
             className={`relative bg-base-100 rounded-2xl shadow-2xl ${modalWidth} mx-3 sm:mx-4 focus:outline-none`}
-            style={{ animation: 'tourFadeIn 0.25s ease-out' }}
+            style={{
+              animation: 'tourFadeIn 0.2s ease-out',
+              transform: `translate(${offset.x}px, ${offset.y}px)`,
+            }}
           >
+            {/* Drag handle */}
+            <div
+              className="cursor-move select-none touch-none pt-3 pb-1 flex justify-center"
+title={t('dragHint')}
+              onPointerDown={startDrag}
+              onPointerMove={moveDrag}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+            >
+              <span className="h-1 w-12 rounded-full bg-base-300" />
+            </div>
+
             {/* Progress bar */}
             <div className="flex gap-1 px-6 pt-5 pb-3">
               {steps.map((_, idx) => (
@@ -269,24 +312,33 @@ export default function AppTour({ steps, storageKey, onStepChange, btnClassName 
         </div>
       )}
 
+      {/* Highlight box — fixed overlay, never clipped by scroll containers */}
+      {box && (
+        <div
+          className="tour-highlight-box"
+          style={{ top: box.top, left: box.left, width: box.width, height: box.height }}
+        />
+      )}
+
       {/* Global styles for highlight + animation */}
       <style jsx global>{`
         @keyframes tourFadeIn {
           from {
             opacity: 0;
-            transform: scale(0.96) translateY(8px);
           }
           to {
             opacity: 1;
-            transform: scale(1) translateY(0);
           }
         }
 
-        .tour-highlight {
-          animation: tourPulse 1.5s ease-in-out infinite;
+        .tour-highlight-box {
+          position: fixed;
+          z-index: 1000000;
+          pointer-events: none;
           border-radius: 6px;
           outline: 3px solid var(--color-primary, #3b82f6);
           outline-offset: 2px;
+          animation: tourPulse 1.5s ease-in-out infinite;
         }
 
         @keyframes tourPulse {

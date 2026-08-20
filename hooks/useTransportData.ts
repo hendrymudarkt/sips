@@ -235,7 +235,7 @@ export function useTransportData() {
     queryKey: QueryKeys.SIPS_KENDARAAN(),
     queryFn: async () => {
       const url = new URL('/api/master/sips-kendaraan', window.location.origin);
-      url.searchParams.append('vehiclegroupcode', 'DT,TR,MB');
+      url.searchParams.append('vehiclegroupcode', 'DT,TR,MB,RT');
       const res = await fetch(url.toString(), { credentials: 'include' });
       if (!res.ok) return [];
       const json = await res.json();
