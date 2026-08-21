@@ -1034,7 +1034,7 @@
     "filterValidFrom": "Valid From",
     "filterValidUntil": "Valid Until",
     "tourWelcomeTitle": "Welcome",
-    "tourWelcomeDesc": "This page is used to manage Vehicle Rent data. You will be guided through every available feature.",
+    "tourWelcomeDesc": "This page is used to manage Vehicle Rent data for DT rentals used to load TBS (driver, service, fuel, lubricant costs etc. are not covered by SKJ). You will be guided through every available feature.",
     "tourActionsTitle": "Actions & Filter",
     "tourActionsDesc": "Use the \"Filter\" button to open the filter panel. \"Refresh\" to reload data, \"Export\" to export to CSV, and \"Add Vehicle Rent\" to add new data.",
     "tourSearchTitle": "Quick Search",

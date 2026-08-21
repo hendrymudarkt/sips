@@ -1034,7 +1034,7 @@
     "filterValidFrom": "Berlaku Dari",
     "filterValidUntil": "Berlaku Sampai",
     "tourWelcomeTitle": "Selamat Datang",
-    "tourWelcomeDesc": "Halaman ini digunakan untuk mengelola data Sewa Kendaraan. Anda akan dipandu melalui setiap fitur yang tersedia.",
+    "tourWelcomeDesc": "Halaman ini digunakan untuk mengelola data Sewa Kendaraan rental DT yang digunakan untuk MUAT TBS (biaya supir, servis, BBM, pelumas, dll tidak ditanggung SKJ). Anda akan dipandu melalui setiap fitur yang tersedia.",
     "tourActionsTitle": "Aksi & Filter",
     "tourActionsDesc": "Gunakan tombol \"Filter\" untuk membuka panel filter. Tombol \"Refresh\" untuk memuat ulang data, \"Export\" untuk mengekspor data ke CSV, dan \"Tambah Sewa Kendaraan\" untuk menambah data baru.",
     "tourSearchTitle": "Pencarian Cepat",
