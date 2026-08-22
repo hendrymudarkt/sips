@@ -100,7 +100,7 @@ export const Drawer = () => {
   const renderIcon = (iconPath: string, size: string = 'h-5 w-5') => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      className={size}
+      className={`${size} shrink-0`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"

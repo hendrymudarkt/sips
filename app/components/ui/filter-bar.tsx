@@ -166,7 +166,7 @@ export function FilterBar({
               {loading ? (
                 <span className="loading loading-spinner loading-xs" />
               ) : (
-                <Icon name="refresh" className="h-4 w-4" />
+                <Icon name="reset" className="h-4 w-4" />
               )}
               {loading ? (t?.('loading') ?? 'Loading...') : (t?.('filterReset') ?? 'Reset')}
             </button>
