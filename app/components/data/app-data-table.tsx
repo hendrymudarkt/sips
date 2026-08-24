@@ -60,6 +60,8 @@ interface AppDataTableProps<T> extends Partial<TableProps<T>> {
   autoFitColumns?: boolean;
   /** Allow dragging column header borders to resize, double-click a border to re-fit */
   resizable?: boolean;
+  /** Render the sort arrow before the column title instead of after it */
+  sortIconFirst?: boolean;
 }
 
 export function AppDataTable<T>({
@@ -71,6 +73,7 @@ export function AppDataTable<T>({
   keyField = '_rowKey' as keyof T & string,
   autoFitColumns = true,
   resizable = true,
+  sortIconFirst = true,
   pagination = true,
   paginationPerPage = 100,
   paginationRowsPerPageOptions = [100, 500, 1000, 5000],
@@ -179,7 +182,7 @@ export function AppDataTable<T>({
   return (
     <div
       ref={wrapRef}
-      className="rounded-lg border border-base-200 shadow-sm overflow-x-auto bg-base-100 animate-slideUp [animation-delay:200ms]"
+      className={`rounded-lg border border-base-200 shadow-sm overflow-x-auto bg-base-100 animate-slideUp [animation-delay:200ms]${sortIconFirst ? ' sort-icon-first' : ''}`}
       data-tour="data-table"
     >
       <div className="min-w-[900px] md:min-w-0">
@@ -217,6 +220,18 @@ export function AppDataTable<T>({
           white-space: normal;
           overflow-wrap: break-word;
           text-overflow: clip;
+        }
+        /* sort arrow hidden until the column is actively sorted, so it never reserves space */
+        .sort-icon-first .rdt_columnSortable > span[aria-hidden='true']:not([class]),
+        .sort-icon-first .rdt_columnSortable > .rdt_sortIcon {
+          display: none;
+        }
+        .sort-icon-first .rdt_columnSortableActive > span[aria-hidden='true']:not([class]),
+        .sort-icon-first .rdt_columnSortableActive > .rdt_sortIcon {
+          display: inline-flex;
+          order: -1;
+          margin-left: 0 !important;
+          margin-inline-end: 4px;
         }
       `}</style>
     </div>
