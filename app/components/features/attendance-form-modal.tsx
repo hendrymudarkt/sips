@@ -126,7 +126,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
               options={['KJ', 'MK', 'WH', 'WS', 'ML', 'P1', 'KB', 'OT'].map(v => ({ value: v, label: v }))}
               value={form.attendance ?? 'KJ'}
               onChange={v => setForm(s => ({ ...s, attendance: v as FormState['attendance'] }))}
-              disabled={disableUnlessAllowed(false)}
+              disabled={disableUnlessAllowed(true)}
             />
           </fieldset>
 
