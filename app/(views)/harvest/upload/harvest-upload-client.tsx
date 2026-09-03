@@ -94,14 +94,15 @@ const EMPTY_PARAMS: HarvestingUploadParams = {
 };
 
 const getSpbno = (r: HarvestingUploadData | Record<string, unknown>): string => {
-  const v = (r as HarvestingUploadData).spbno ?? (r as HarvestingUploadData).nospb;
+  const rec = r as HarvestingUploadData & Record<string, unknown>;
+  const v = rec.spbno ?? rec.nospb ?? rec.SPBNO ?? rec.NOSPB;
   return typeof v === 'string' ? v : String(v ?? '');
 };
 
 export default function HarvestingUploadPage() {
   const t = useTranslations('HarvestUpload');
   const localeTag = useLocale();
-  const { isAdmin, isKra, initCheck, userFcba, userAfdeling } = useUploadPage();
+  const { isAdmin, isKsi, isKra, initCheck, userFcba, userAfdeling } = useUploadPage();
 
   const tourSteps: TourStep[] = [
     { icon: '👋', title: t('tour1Title'), content: t('tour1Desc') },
@@ -136,9 +137,12 @@ export default function HarvestingUploadPage() {
 
       if (result.success && Array.isArray(result.data) && result.data.length > 0) {
         // Normalize spbno/nospb so downstream always has spbno
+        // Normalisasi key penanda (toleran lower/UPPER) agar tabel, search, export, submit selalu baca key lowercase
         const normalized: HarvestingUploadData[] = result.data.map((r: Record<string, unknown>) => {
-          const spb = (r.spbno as string) ?? (r.nospb as string) ?? '';
-          return { ...r, spbno: spb } as HarvestingUploadData;
+          const spb = (r.spbno as string) ?? (r.nospb as string) ?? (r.SPBNO as string) ?? (r.NOSPB as string) ?? '';
+          const fieldcode = (r.fieldcode as string) ?? (r.FIELDCODE as string) ?? '';
+          const harvestdate = (r.harvestdate as string) ?? (r.HARVESTDATE as string) ?? '';
+          return { ...r, spbno: spb, fieldcode, harvestdate } as HarvestingUploadData;
         });
         setData(normalized);
       } else if (
@@ -195,6 +199,7 @@ export default function HarvestingUploadPage() {
           item.vehicle,
           item.driver,
           item.mill,
+          item.afdeling,
           item.fcba,
           item.chitno,
           item.fieldcode,
@@ -390,6 +395,7 @@ export default function HarvestingUploadPage() {
         noWrap: true,
         cell: r => <span className="whitespace-nowrap">{formatPerfNumber(Number(r.bjr_chit) || 0, localeTag)}</span>,
       },
+      { name: <span title={t('colAfdeling')}>{t('colAfdeling')}</span>, selector: r => r.afdeling || '-', sortable: true, minWidth: '85px', noWrap: true },
       { name: <span title={t('colFcba')}>{t('colFcba')}</span>, selector: r => r.fcba || '-', sortable: true, minWidth: '75px', noWrap: true },
       { name: <span title={t('colMill')}>{t('colMill')}</span>, selector: r => r.mill || '-', sortable: true, minWidth: '65px', noWrap: true },
     ],
@@ -420,6 +426,7 @@ export default function HarvestingUploadPage() {
       'fcentry': row.fcentry || null,
       'fcedit': row.fcedit || null,
       'fcip': row.fcip || null,
+      'afdeling': row.afdeling || '',
       'fcba': row.fcba || '',
       'chitno': row.chitno || '',
       'mill_weight_bruto': Number(row.mill_weight_bruto) || 0,
@@ -438,7 +445,7 @@ export default function HarvestingUploadPage() {
     exportJsonToCsv(exportData, `Harvesting_Upload_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
-  const canAccessPage = isAdmin;
+  const canAccessPage = isAdmin || isKsi || isKra;
   if (initCheck && !canAccessPage) return <AccessDenied message={t('accessDeniedDesc')} />;
   if (!initCheck) return <PageLayout>{null}</PageLayout>;
 

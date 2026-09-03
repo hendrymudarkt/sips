@@ -17,10 +17,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (!token) return unauthorizedResponse();
 
   const userLevel = req.cookies.get(CookieName.SECURE_USER_LEVEL)?.value?.toUpperCase() ?? '';
-  // Harvesting SPB: ADM penuh; KSI approve+open; KRA approve
-  if (!['ADM', 'ADMIN', 'KSI', 'KRA'].includes(userLevel)) {
+  // Open Harvesting SPB: ADM penuh; KSI saja (KRA tidak boleh open)
+  if (!['ADM', 'ADMIN', 'KSI'].includes(userLevel)) {
     return NextResponse.json(
-      { success: false, message: 'Akses ditolak. Fitur ini khusus Admin, KSI, dan KRA.' },
+      { success: false, message: 'Akses ditolak. Fitur ini khusus Admin dan KSI.' },
       { status: 403 }
     );
   }
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const body = await req.json() as { data?: Array<Record<string, unknown>> };
 
-    // Petakan ke 3 key yang dibutuhkan harvesting_mobile (toleran: camel/UPPER, spbno/nospb)
+    // Petakan ke 3 key yang dibutuhkan open_harvesting_mobile (toleran: camel/UPPER, spbno/nospb)
     const mapped = {
       data: (Array.isArray(body?.data) ? body.data : []).map((r) => ({
         spbno: String(r.spbno ?? r.nospb ?? r.SPBNO ?? '').trim(),
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Validate dan sanitize input
     const validation = validateInput(mapped, harvestUploadSubmitSchema);
     if (!validation.success) {
-      console.error('[API_HARVEST_SUBMIT_VALIDATION_ERROR]', {
+      console.error('[API_HARVEST_OPEN_VALIDATION_ERROR]', {
         validationError: validation.error,
         issues: validation.issues,
         body: JSON.stringify(body).slice(0, 2000),
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     // Forward validated data to backend (zod-validated; no regex stripping)
-    const response = await fetch(`${BACKEND_URL}/api/uploads/harvesting/mobile`, {
+    const response = await fetch(`${BACKEND_URL}/api/uploads/harvesting/mobile/open`, {
       method: 'POST',
       headers: authHeaders(token),
       body: JSON.stringify(validation.data),
@@ -68,15 +68,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     if (!response.ok) {
       // Pesan backend dicatat di log server saja; ke client tetap generik agar tidak bocor detail DB.
-      // Sertakan field `error` (pesan Oracle asli) agar akar 500 bisa didiagnosis dari log.
       const backendBody = data as { message?: string; error?: string };
-      console.error('[API_HARVEST_SUBMIT_BACKEND_ERROR]', {
+      console.error('[API_HARVEST_OPEN_BACKEND_ERROR]', {
         status: response.status,
         message: backendBody?.message || 'no message',
         error: backendBody?.error || 'no error detail',
       });
       return NextResponse.json(
-        { success: false, message: 'Failed to submit harvest' },
+        { success: false, message: 'Failed to open harvest' },
         { status: response.status }
       );
     }

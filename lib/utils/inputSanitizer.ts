@@ -188,43 +188,13 @@ export const harvestSubmitSchema = z.object({
   ),
 });
 
-// Harvest Upload Schema (SPB submit — all optional because createPayloadItem always fills defaults)
+// Harvest Upload Schema (harvesting_mobile hanya butuh 3 key pencocokan)
 export const harvestUploadSubmitSchema = z.object({
   data: z.array(
     z.object({
-      spbno: z.string().optional(),
-      fieldcode: z.string().optional(),
-      receptiondate: z.string().optional(),
-      harvestdate: z.string().optional(),
-      cropcode: z.string().optional(),
-      productcode: z.string().optional(),
-      own: z.string().optional(),
-      vehicle: z.string().optional(),
-      driver: z.string().optional(),
-      mill: z.string().optional(),
-      agreementcode: z.string().optional().nullable(),
-      transporttype: z.string().optional(),
-      spb_type: z.union([z.string(), z.number()]).optional(),
-      bunch: z.number().optional(),
-      bucket: z.number().optional().nullable(),
-      pressemester_abw: z.number().optional(),
-      bunch_estateweight: z.number().optional(),
-      fcentry: z.string().optional().nullable(),
-      fcedit: z.string().optional().nullable(),
-      fcip: z.string().optional().nullable(),
-      fcba: z.string().optional(),
-      chitno: z.string().optional(),
-      mill_weight_bruto: z.number().optional(),
-      mill_weight_gross: z.number().optional(),
-      mill_weight_tarra: z.number().optional(),
-      mill_weight_potongan: z.number().optional(),
-      mill_weight_netto: z.number().optional(),
-      mentah: z.string().optional().nullable(),
-      tankos: z.string().optional().nullable(),
-      hilang: z.string().optional().nullable(),
-      keterangan: z.string().optional(),
-      mill_weight_dtl: z.number().optional(),
-      bjr_chit: z.number().optional(),
+      spbno: z.string().min(1, 'SPBNO wajib diisi'),
+      fieldcode: z.string().min(1, 'FIELDCODE wajib diisi'),
+      harvestdate: z.string().min(1, 'HARVESTDATE wajib diisi'),
     })
   ).min(1, 'Data tidak boleh kosong'),
 });

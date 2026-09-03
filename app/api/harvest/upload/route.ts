@@ -12,10 +12,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (!token) return unauthorizedResponse();
 
   const userLevel = req.cookies.get(CookieName.SECURE_USER_LEVEL)?.value?.toUpperCase() ?? '';
-  // ponytail: dikunci sementara hanya untuk ADM; hapus blok ini untuk dibuka lagi
-  if (userLevel !== 'ADM' && userLevel !== 'ADMIN') {
+  // Harvesting SPB: ADM penuh; KSI approve+open; KRA approve
+  if (!['ADM', 'ADMIN', 'KSI', 'KRA'].includes(userLevel)) {
     return NextResponse.json(
-      { success: false, message: 'Akses ditolak. Hanya Admin yang dapat mengakses fitur ini.' },
+      { success: false, message: 'Akses ditolak. Fitur ini khusus Admin, KSI, dan KRA.' },
       { status: 403 }
     );
   }

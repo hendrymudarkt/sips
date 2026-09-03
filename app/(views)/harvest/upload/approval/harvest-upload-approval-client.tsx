@@ -16,7 +16,7 @@ import { QuickSearch } from '@/app/components/ui/quick-search';
 import { SummaryCards } from '@/app/components/ui/summary-cards';
 import { PageLayout } from '@/app/components/ui/page-layout';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
-import { getTodayISO, getYesterdayISO } from '@/utils/helpers/datetime';
+import { getTodayISO, getYesterdayISO, toBackendDateTime } from '@/utils/helpers/datetime';
 import AppTour, { type TourStep } from '@/app/components/feedback/app-tour';
 
 interface HarvestingUploadData {
@@ -96,50 +96,23 @@ const EMPTY_PARAMS: HarvestingUploadParams = {
 };
 
 const getSpbno = (r: HarvestingUploadData | Record<string, unknown>): string => {
-  const v = (r as HarvestingUploadData).spbno ?? (r as HarvestingUploadData).nospb;
+  const rec = r as HarvestingUploadData & Record<string, unknown>;
+  const v = rec.spbno ?? rec.nospb ?? rec.SPBNO ?? rec.NOSPB;
   return typeof v === 'string' ? v : String(v ?? '');
 };
 
+// harvesting_mobile hanya butuh 3 key pencocokan (SPBNO, FIELDCODE, HARVESTDATE);
+// sisanya diambil backend dari V_HARVESTING_DATA.
 const createPayloadItem = (record: HarvestingUploadData): Record<string, unknown> => ({
-  spbno: getSpbno(record) || '',
-  fieldcode: record.fieldcode || '',
-  receptiondate: record.receptiondate || '',
-  harvestdate: record.harvestdate || '',
-  cropcode: record.cropcode || '',
-  productcode: record.productcode || '',
-  own: record.own || '',
-  vehicle: record.vehicle || '',
-  driver: record.driver || '',
-  mill: record.mill || '',
-  agreementcode: record.agreementcode || null,
-  transporttype: record.transporttype || '',
-  spb_type: record.spb_type || 0,
-  bunch: Number(record.bunch) || 0,
-  bucket: record.bucket ? Number(record.bucket) : null,
-  pressemester_abw: Number(record.pressemester_abw) || 0,
-  bunch_estateweight: Number(record.bunch_estateweight) || 0,
-  fcentry: record.fcentry || null,
-  fcedit: record.fcedit || null,
-  fcip: record.fcip || null,
-  fcba: record.fcba || '',
-  chitno: record.chitno || '',
-  mill_weight_bruto: Number(record.mill_weight_bruto) || 0,
-  mill_weight_gross: Number(record.mill_weight_gross) || 0,
-  mill_weight_tarra: Number(record.mill_weight_tarra) || 0,
-  mill_weight_potongan: Number(record.mill_weight_potongan) || 0,
-  mill_weight_netto: Number(record.mill_weight_netto) || 0,
-  mentah: record.mentah || null,
-  tankos: record.tankos || null,
-  hilang: record.hilang || null,
-  keterangan: record.keterangan || '',
-  mill_weight_dtl: Number(record.mill_weight_dtl) || 0,
-  bjr_chit: Number(record.bjr_chit) || 0,
+  spbno: getSpbno(record),
+  fieldcode: String(record.fieldcode ?? record.FIELDCODE ?? ''),
+  harvestdate: toBackendDateTime((record.harvestdate ?? record.HARVESTDATE) as string | undefined),
 });
 
 export default function HarvestingUploadPage() {
   const t = useTranslations('HarvestUpload');
   const localeTag = useLocale();
-  const { isAdmin, isKra, initCheck, userFcba, userAfdeling, level } = useUploadPage();
+  const { isAdmin, isKsi, isKra, initCheck, userFcba, userAfdeling, level } = useUploadPage();
   const { submit, submitting, submitProgress } = useBatchSubmit<HarvestingUploadData>();
 
   const tourSteps: TourStep[] = [
@@ -185,9 +158,12 @@ export default function HarvestingUploadPage() {
 
       if (result.success && Array.isArray(result.data) && result.data.length > 0) {
         // Normalize spbno/nospb so downstream always has spbno
+        // Normalisasi key penanda (toleran lower/UPPER) agar tabel, search, export, submit selalu baca key lowercase
         const normalized: HarvestingUploadData[] = result.data.map((r: Record<string, unknown>) => {
-          const spb = (r.spbno as string) ?? (r.nospb as string) ?? '';
-          return { ...r, spbno: spb } as HarvestingUploadData;
+          const spb = (r.spbno as string) ?? (r.nospb as string) ?? (r.SPBNO as string) ?? (r.NOSPB as string) ?? '';
+          const fieldcode = (r.fieldcode as string) ?? (r.FIELDCODE as string) ?? '';
+          const harvestdate = (r.harvestdate as string) ?? (r.HARVESTDATE as string) ?? '';
+          return { ...r, spbno: spb, fieldcode, harvestdate } as HarvestingUploadData;
         });
         setData(normalized);
       } else if (
@@ -244,6 +220,7 @@ export default function HarvestingUploadPage() {
           item.vehicle,
           item.driver,
           item.mill,
+          item.afdeling,
           item.fcba,
           item.chitno,
           item.fieldcode,
@@ -433,6 +410,7 @@ export default function HarvestingUploadPage() {
         noWrap: true,
         cell: r => <span className="whitespace-nowrap">{formatPerfNumber(Number(r.bjr_chit) || 0, localeTag)}</span>,
       },
+      { name: <span title={t('colAfdeling')}>{t('colAfdeling')}</span>, selector: r => r.afdeling || '-', sortable: true, minWidth: '85px', noWrap: true },
       { name: <span title={t('colFcba')}>{t('colFcba')}</span>, selector: r => r.fcba || '-', sortable: true, minWidth: '75px', noWrap: true },
       { name: <span title={t('colMill')}>{t('colMill')}</span>, selector: r => r.mill || '-', sortable: true, minWidth: '65px', noWrap: true },
     ],
@@ -497,6 +475,7 @@ export default function HarvestingUploadPage() {
       'fcentry': row.fcentry || null,
       'fcedit': row.fcedit || null,
       'fcip': row.fcip || null,
+      'afdeling': row.afdeling || '',
       'fcba': row.fcba || '',
       'chitno': row.chitno || '',
       'mill_weight_bruto': Number(row.mill_weight_bruto) || 0,
@@ -529,7 +508,8 @@ export default function HarvestingUploadPage() {
       alert(
         `${t('submitSuccess', { count: successCount })}\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`
       );
-      setData([]);
+      // Muat ulang dari server agar sisa data langsung tampil (jangan dikosongkan manual)
+      await fetchData();
     } else {
       let msg = t('submitPartial', { success: String(successCount), fail: String(totalRecords - successCount) });
       if (successList.length > 0) msg += `\n\nSuccessful SPBs:\n${successList.join(', ')}`;
@@ -544,7 +524,7 @@ export default function HarvestingUploadPage() {
     setToggledClearRows(prev => !prev);
   };
 
-  const canAccessPage = isAdmin;
+  const canAccessPage = isAdmin || isKsi || isKra;
   if (initCheck && !canAccessPage) return <AccessDenied message={t('accessDeniedDesc')} />;
   if (!initCheck) return <PageLayout>{null}</PageLayout>;
 

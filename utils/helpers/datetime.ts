@@ -1,8 +1,13 @@
-export function toBackendDateTime(v?: string) {
-  if (!v) return '';
-  const [date, time = ''] = v.split('T');
-  const timeWithSeconds = time.length <= 5 ? `${time}:00` : time;
-  return `${date} ${timeWithSeconds}`;
+export function toBackendDateTime(v?: string | null): string {
+  const s = String(v ?? '')
+    .trim()
+    .replace('T', ' ')
+    .replace(/Z$/, '')
+    .split('.')[0] as string;
+  const [date, time] = s.split(' ');
+  if (!date) return '';
+  if (!time) return date;
+  return `${date} ${time.length <= 5 ? `${time}:00` : time.slice(0, 8)}`;
 }
 
 export function getTodayISO(): string {

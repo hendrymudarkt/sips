@@ -17,4 +17,12 @@ describe('Harvest Upload API Security', () => {
     vi.mocked(proxyGet).mockResolvedValue(      new Response(JSON.stringify({ success: true, data: [] })) as never    );        const req = new NextRequest('http://localhost/api/harvest/upload', { headers: { cookie: 'SECURE_USER_LEVEL=ADM' } });
     const res = await GET(req);
     expect(proxyGet).toHaveBeenCalled();
-    expect(res.status).toBe(200);  });});
+    expect(res.status).toBe(200);  });
+  it.each(['KSI', 'KRA'])('should allow level %s', async (level) => {    const { proxyGet } = await import('@/lib/api/apiProxy');
+    vi.mocked(proxyGet).mockResolvedValue(      new Response(JSON.stringify({ success: true, data: [] })) as never    );        const req = new NextRequest('http://localhost/api/harvest/upload', { headers: { cookie: `SECURE_USER_LEVEL=${level}` } });
+    const res = await GET(req);
+    expect(proxyGet).toHaveBeenCalled();
+    expect(res.status).toBe(200);  });
+  it('should return 403 for disallowed level', async () => {    const req = new NextRequest('http://localhost/api/harvest/upload', { headers: { cookie: 'SECURE_USER_LEVEL=MDP' } });
+    const res = await GET(req);
+    expect(res.status).toBe(403);  });});

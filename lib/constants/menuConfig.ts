@@ -51,8 +51,8 @@ export const MenuConfig: MenuItem[] = [
         label: 'harvestingSPB',
         href: '/harvest/upload',
         icon: 'M3 16.5V18.75C3 19.9926 4.00736 21 5.25 21H18.75C19.9926 21 21 19.9926 21 18.75V16.5M7.5 7.5L12 3M12 3L16.5 7.5M12 3L12 16.5',
-        // ponytail: dikunci sementara hanya untuk ADM; kembalikan ke ['ADM','KSI','KRA'] untuk dibuka lagi
-        requiredLevel: ['ADM'],
+        // Harvesting SPB: ADM penuh; KSI approve+open; KRA approve
+        requiredLevel: ['ADM', 'KSI', 'KRA'],
         children: [
           {
             id: 'harvest-upload-list',
@@ -70,7 +70,7 @@ export const MenuConfig: MenuItem[] = [
             id: 'harvest-upload-open',
             label: 'openUpload',
             href: '/harvest/upload/open',
-            requiredLevel: ['ADM'],
+            requiredLevel: ['ADM', 'KSI'],
             icon: 'M13.5 10.5V6.75C13.5 4.26472 15.5147 2.25 18 2.25C20.4853 2.25 22.5 4.26472 22.5 6.75V10.5M3.75 21.75H14.25C15.4926 21.75 16.5 20.7426 16.5 19.5V12.75C16.5 11.5074 15.4926 10.5 14.25 10.5H3.75C2.50736 10.5 1.5 11.5074 1.5 12.75V19.5C1.5 20.7426 2.50736 21.75 3.75 21.75Z',
           },
         ],
