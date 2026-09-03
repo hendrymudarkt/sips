@@ -52,6 +52,16 @@ const POSITION_OPTIONS: Option[] = [
   { value: 'KR.AFDELING', label: 'KR.AFDELING - Kerani Afdeling' },
 ];
 
+const EXTRA_LEVEL_OPTIONS: Option[] = [
+  { value: 'BOD', label: 'BOD - Board of Director' },
+  { value: 'ADM', label: 'ADM - Admin' },
+];
+
+const EXTRA_POSITION_OPTIONS: Option[] = [
+  { value: 'BOD', label: 'BOD - Board of Director' },
+  { value: 'ADMIN', label: 'ADMIN - Admin' },
+];
+
 const POSITION_TO_LEVEL: Record<string, string> = {
   EM: 'MGR',
   KASIE: 'KSI',
@@ -61,6 +71,8 @@ const POSITION_TO_LEVEL: Record<string, string> = {
   'KR.PANEN': 'KRP',
   'KR.TRANS': 'KRT',
   'KR.AFDELING': 'KRA',
+  BOD: 'BOD',
+  ADMIN: 'ADM',
 };
 
 const initialBulkRow: UserFormState = { ...initialUserForm, password: '12345678' };
@@ -112,9 +124,15 @@ export default function UsersClient() {
     handleAddUser, handleExport,
   } = useUsersData(initialQ, initialFilters);
 
-  const visibleLevelOptions = useMemo(() => LEVEL_OPTIONS, []);
+  const visibleLevelOptions = useMemo(
+    () => (userLevel === 'ADM' ? [...LEVEL_OPTIONS, ...EXTRA_LEVEL_OPTIONS] : LEVEL_OPTIONS),
+    [userLevel]
+  );
 
-  const visiblePositionOptions = useMemo(() => POSITION_OPTIONS, []);
+  const visiblePositionOptions = useMemo(
+    () => (userLevel === 'ADM' ? [...POSITION_OPTIONS, ...EXTRA_POSITION_OPTIONS] : POSITION_OPTIONS),
+    [userLevel]
+  );
 
   const [viewMode, setViewMode] = useState<'table' | 'gallery'>('table');
   const galleryRef = useRef<UsersGalleryHandle>(null);

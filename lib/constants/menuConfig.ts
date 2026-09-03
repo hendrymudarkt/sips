@@ -48,10 +48,32 @@ export const MenuConfig: MenuItem[] = [
       },
       {
         id: 'harvest-upload',
-        label: 'upload',
+        label: 'harvestingSPB',
         href: '/harvest/upload',
         icon: 'M3 16.5V18.75C3 19.9926 4.00736 21 5.25 21H18.75C19.9926 21 21 19.9926 21 18.75V16.5M7.5 7.5L12 3M12 3L16.5 7.5M12 3L12 16.5',
-        requiredLevel: ['ADM', 'KSI', 'KRA'],
+        // ponytail: dikunci sementara hanya untuk ADM; kembalikan ke ['ADM','KSI','KRA'] untuk dibuka lagi
+        requiredLevel: ['ADM'],
+        children: [
+          {
+            id: 'harvest-upload-list',
+            label: 'list',
+            href: '/harvest/upload',
+            icon: 'M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z',
+          },
+          {
+            id: 'harvest-upload-approve',
+            label: 'approve',
+            href: '/harvest/upload/approval',
+            icon: 'M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z',
+          },
+          {
+            id: 'harvest-upload-open',
+            label: 'openUpload',
+            href: '/harvest/upload/open',
+            requiredLevel: ['ADM'],
+            icon: 'M13.5 10.5V6.75C13.5 4.26472 15.5147 2.25 18 2.25C20.4853 2.25 22.5 4.26472 22.5 6.75V10.5M3.75 21.75H14.25C15.4926 21.75 16.5 20.7426 16.5 19.5V12.75C16.5 11.5074 15.4926 10.5 14.25 10.5H3.75C2.50736 10.5 1.5 11.5074 1.5 12.75V19.5C1.5 20.7426 2.50736 21.75 3.75 21.75Z',
+          },
+        ],
       },
     ],
   },
@@ -119,10 +141,13 @@ export const canAccessMenuItem = (item: MenuItem, userLevel: string): boolean =>
   return item.requiredLevel.includes(userLevel);
 };
 
-// Helper function to get filtered menu based on user level
+// Helper function to get filtered menu based on user level (recursive so nested requiredLevel applies)
 export const getMenuForUserLevel = (userLevel: string): MenuItem[] => {
-  return MenuConfig.filter(item => canAccessMenuItem(item, userLevel)).map(item => ({
-    ...item,
-    children: item.children?.filter(child => canAccessMenuItem(child, userLevel)),
-  }));
+  const filter = (items: MenuItem[]): MenuItem[] =>
+    items
+      .filter(item => canAccessMenuItem(item, userLevel))
+      .map(item =>
+        item.children ? { ...item, children: filter(item.children) } : item
+      );
+  return filter(MenuConfig);
 };

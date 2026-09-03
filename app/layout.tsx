@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Providers from './components/auth/providers';
 import { env } from '@/lib/env';
+import PwaInstallPrompt from './components/pwa/pwa-install-prompt';
 
 // Use font-display swap so fonts do not block the initial render.
 const geistSans = Geist({
@@ -78,6 +79,8 @@ export const viewport: Viewport = {
   themeColor: '#000000',
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
 };
 
 export default async function RootLayout({
@@ -102,6 +105,7 @@ export default async function RootLayout({
             </a>
             <ThemeProvider />
             {children}
+            <PwaInstallPrompt />
           </Providers>
         </NextIntlClientProvider>
       </body>

@@ -6,6 +6,9 @@ import { cookieStore } from '@/utils/auth/cookieStore';
 export interface UploadPageState {
   isMgr: boolean;
   isAdmin: boolean;
+  isKsi: boolean;
+  isKra: boolean;
+  level: string;
   initCheck: boolean;
   userFcba: string;
   userAfdeling: string;
@@ -20,6 +23,9 @@ export function useUploadPage(): UploadPageState {
   const [state, setState] = useState<UploadPageState>({
     isMgr: false,
     isAdmin: false,
+    isKsi: false,
+    isKra: false,
+    level: '',
     initCheck: false,
     userFcba: '',
     userAfdeling: '',
@@ -33,6 +39,9 @@ export function useUploadPage(): UploadPageState {
     setState({
       isMgr: level === 'MGR',
       isAdmin: level === 'ADM' || level === 'ADMIN',
+      isKsi: level === 'KSI',
+      isKra: level === 'KRA',
+      level,
       initCheck: true,
       userFcba: fcba,
       userAfdeling: afdeling,

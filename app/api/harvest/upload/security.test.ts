@@ -14,4 +14,7 @@ describe('Harvest Upload API Security', () => {
   it('should return 401 if no token', async () => {    const { getTokenFromCookie } = await import('@/utils/api/upstreamProxy');
     vi.mocked(getTokenFromCookie).mockResolvedValue(undefined);    const req = new NextRequest('http://localhost/api/harvest/upload');    const res = await GET(req);    expect(res.status).toBe(401);  });
   it('should call proxyGet when token is present', async () => {    const { proxyGet } = await import('@/lib/api/apiProxy');
-    vi.mocked(proxyGet).mockResolvedValue(      new Response(JSON.stringify({ success: true, data: [] })) as never    );    const req = new NextRequest('http://localhost/api/harvest/upload');    const res = await GET(req);    expect(proxyGet).toHaveBeenCalled();    expect(res.status).toBe(200);  });});
+    vi.mocked(proxyGet).mockResolvedValue(      new Response(JSON.stringify({ success: true, data: [] })) as never    );        const req = new NextRequest('http://localhost/api/harvest/upload', { headers: { cookie: 'SECURE_USER_LEVEL=ADM' } });
+    const res = await GET(req);
+    expect(proxyGet).toHaveBeenCalled();
+    expect(res.status).toBe(200);  });});

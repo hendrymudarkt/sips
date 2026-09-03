@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { AppDataTable } from '@/app/components/data/app-data-table';
 import type { TableColumn } from 'react-data-table-component';
 import { AccessDenied } from '@/app/components/feedback/access-denied';
 import { useLocale } from '@/hooks/useLocale';
 import { useUploadPage } from '@/hooks/useUploadPage';
+import { useBatchSubmit } from '@/hooks/useBatchSubmit';
 import { formatPerfDate, formatPerfNumber } from '@/utils/helpers/perf-formatter';
 import { FilterBar } from '@/app/components/ui/filter-bar';
+import { ConfirmModal } from '@/app/components/ui/confirm-modal';
 import { Toolbar } from '@/app/components/ui/toolbar';
 import { QuickSearch } from '@/app/components/ui/quick-search';
 import { SummaryCards } from '@/app/components/ui/summary-cards';
@@ -98,10 +100,47 @@ const getSpbno = (r: HarvestingUploadData | Record<string, unknown>): string => 
   return typeof v === 'string' ? v : String(v ?? '');
 };
 
+const createPayloadItem = (record: HarvestingUploadData): Record<string, unknown> => ({
+  spbno: getSpbno(record) || '',
+  fieldcode: record.fieldcode || '',
+  receptiondate: record.receptiondate || '',
+  harvestdate: record.harvestdate || '',
+  cropcode: record.cropcode || '',
+  productcode: record.productcode || '',
+  own: record.own || '',
+  vehicle: record.vehicle || '',
+  driver: record.driver || '',
+  mill: record.mill || '',
+  agreementcode: record.agreementcode || null,
+  transporttype: record.transporttype || '',
+  spb_type: record.spb_type || 0,
+  bunch: Number(record.bunch) || 0,
+  bucket: record.bucket ? Number(record.bucket) : null,
+  pressemester_abw: Number(record.pressemester_abw) || 0,
+  bunch_estateweight: Number(record.bunch_estateweight) || 0,
+  fcentry: record.fcentry || null,
+  fcedit: record.fcedit || null,
+  fcip: record.fcip || null,
+  fcba: record.fcba || '',
+  chitno: record.chitno || '',
+  mill_weight_bruto: Number(record.mill_weight_bruto) || 0,
+  mill_weight_gross: Number(record.mill_weight_gross) || 0,
+  mill_weight_tarra: Number(record.mill_weight_tarra) || 0,
+  mill_weight_potongan: Number(record.mill_weight_potongan) || 0,
+  mill_weight_netto: Number(record.mill_weight_netto) || 0,
+  mentah: record.mentah || null,
+  tankos: record.tankos || null,
+  hilang: record.hilang || null,
+  keterangan: record.keterangan || '',
+  mill_weight_dtl: Number(record.mill_weight_dtl) || 0,
+  bjr_chit: Number(record.bjr_chit) || 0,
+});
+
 export default function HarvestingUploadPage() {
   const t = useTranslations('HarvestUpload');
   const localeTag = useLocale();
   const { isAdmin, isKra, initCheck, userFcba, userAfdeling } = useUploadPage();
+  const { submit, submitting, submitProgress } = useBatchSubmit<HarvestingUploadData>();
 
   const tourSteps: TourStep[] = [
     { icon: '👋', title: t('tour1Title'), content: t('tour1Desc') },
@@ -117,6 +156,14 @@ export default function HarvestingUploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<HarvestingUploadData[]>([]);
+  const [toggledClearRows, setToggledClearRows] = useState(false);
+  const selectedSpbSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const r of selectedRows) { const k = getSpbno(r); if (k) s.add(k); }
+    return s;
+  }, [selectedRows]);
 
   const fetchData = async (overrideParams?: HarvestingUploadParams) => {
     setLoading(true);
@@ -129,6 +176,7 @@ export default function HarvestingUploadPage() {
       for (const [key, value] of Object.entries(params)) {
         if (value) queryParams.append(key, value);
       }
+      queryParams.append('upload', 'Y');
 
       const url = `/api/harvest/upload${queryParams.toString() ? `?${queryParams}` : ''}`;
       const response = await fetch(url);
@@ -263,12 +311,6 @@ export default function HarvestingUploadPage() {
         ignoreRowClick: true,
       },
       {
-        name: <span title={t('colApproval')}>{t('colApproval')}</span>,
-        selector: r => (r.level_user_detail as string) || '-',
-        sortable: true,
-        width: '150px',
-      },
-      {
         name: <span className="whitespace-nowrap" title={t('colNoSpb')}>{t('colNoSpb')}</span>,
         selector: r => getSpbno(r) || '-',
         sortable: true,
@@ -396,6 +438,40 @@ export default function HarvestingUploadPage() {
     [localeTag, t]
   );
 
+  const prevRowsRef = useRef<HarvestingUploadData[]>([]);
+
+  const handleRowSelected = (state: { selectedRows: HarvestingUploadData[] }) => {
+    const prev = prevRowsRef.current;
+    const cur = state.selectedRows;
+    prevRowsRef.current = cur;
+
+    const prevKeys = new Set(prev.map(r => r._rowKey));
+    const curKeys = new Set(cur.map(r => r._rowKey));
+    const added = cur.filter(r => !prevKeys.has(r._rowKey));
+    const removed = prev.filter(r => !curKeys.has(r._rowKey));
+
+    const next = new Set(selectedSpbSet);
+    if (added.length === 1 && removed.length === 0) {
+      const spb = getSpbno(added[0]);
+      if (spb) next.add(spb);
+    } else if (removed.length === 1 && added.length === 0) {
+      const spb = getSpbno(removed[0]);
+      if (spb) next.delete(spb);
+    } else {
+      next.clear();
+      for (const r of cur) { const k = getSpbno(r); if (k) next.add(k); }
+    }
+    setSelectedRows(dataWithKey.filter(r => next.has(getSpbno(r))));
+  };
+
+  const handleSubmitHarvesting = () => {
+    if (selectedRows.length === 0) {
+      setError(t('noDataToSubmit'));
+      return;
+    }
+    setConfirmOpen(true);
+  };
+
   const handleExport = () => {
     if (filteredDataWithKey.length === 0) return;
     const exportData = filteredDataWithKey.map(row => ({
@@ -438,6 +514,35 @@ export default function HarvestingUploadPage() {
     exportJsonToCsv(exportData, `Harvesting_Upload_${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
+  const handleConfirmHarvesting = async () => {
+    setConfirmOpen(false);
+    setError(null);
+    const { successCount, failMessages, successList } = await submit(selectedRows, {
+      createPayloadItem,
+      endpoint: '/api/harvest/submit',
+      itemLabel: item => `SPB ${getSpbno(item)} (${item.chitno})`,
+    });
+
+    const totalRecords = selectedRows.length;
+    if (successCount === totalRecords) {
+      alert(
+        `${t('submitSuccess', { count: successCount })}\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`
+      );
+      setData([]);
+    } else {
+      let msg = t('submitPartial', { success: String(successCount), fail: String(totalRecords - successCount) });
+      if (successList.length > 0) msg += `\n\nSuccessful SPBs:\n${successList.join(', ')}`;
+      if (failMessages.length > 0) {
+        msg += `\n\nFailed:\n${failMessages.slice(0, 10).join('\n')}`;
+        if (failMessages.length > 10) msg += `\n...dan ${failMessages.length - 10} lainnya`;
+      }
+      alert(msg);
+      if (successCount > 0) await fetchData();
+    }
+    setSelectedRows([]);
+    setToggledClearRows(prev => !prev);
+  };
+
   const canAccessPage = isAdmin;
   if (initCheck && !canAccessPage) return <AccessDenied message={t('accessDeniedDesc')} />;
   if (!initCheck) return <PageLayout>{null}</PageLayout>;
@@ -445,7 +550,7 @@ export default function HarvestingUploadPage() {
   return (
     <PageLayout>
       <Toolbar
-        title={t('title')}
+        title={t('titleOpen')}
         titleTooltip={t('titleTooltip')}
         actions={[
           {
@@ -468,6 +573,16 @@ export default function HarvestingUploadPage() {
             icon: 'export',
             onClick: handleExport,
             disabled: filteredDataWithKey.length === 0,
+          },
+          {
+            key: 'submit',
+            label: submitting ? submitProgress || t('submitting') : `${t('open')} (${selectedRows.length})`,
+            icon: 'lock-open',
+            onClick: handleSubmitHarvesting,
+            disabled: selectedRows.length === 0,
+            loading: submitting,
+            variant: 'primary',
+            tour: 'submit-button',
           },
         ]}
       >
@@ -566,11 +681,26 @@ export default function HarvestingUploadPage() {
             data={filteredDataWithKey}
             loading={loading}
             namespace="Harvest"
+            selectableRows
+            selectedRows={selectedRows}
+            onSelectedRowsChange={handleRowSelected}
+            selectableRowSelected={(row) => selectedSpbSet.has(getSpbno(row))}
+            clearSelectedRows={toggledClearRows}
             paginationPerPage={100}
             paginationRowsPerPageOptions={[100, 500, 1000, 5000]}
             noDataComponent={<div className="py-8 text-base-content/70">{t('noData')}</div>}
           />
         )}
+      <ConfirmModal
+        open={confirmOpen}
+        title={t('confirmTitle')}
+        message={`${t('confirmMessage', { count: selectedRows.length })}\n\nTotal Bunch: ${summary.totalBunch}\nTotal Estate Weight: ${formatPerfNumber(summary.totalEstateWeight, localeTag)} kg`}
+        confirmText={t('confirmOk')}
+        cancelText={t('cancel')}
+        onConfirm={handleConfirmHarvesting}
+        onCancel={() => setConfirmOpen(false)}
+        loading={submitting}
+      />
     </PageLayout>
   );
 }

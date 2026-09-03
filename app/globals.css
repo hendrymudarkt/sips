@@ -89,3 +89,30 @@
 .animate-fadeOut {
   animation: fadeOut 0.3s ease-out;
 }
+
+/* ─── PWA native feel ───────────────────────────────────────── */
+html {
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  /* safe-area for notch & home indicator */
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  /* prevent pull-to-refresh bounce on mobile */
+  overscroll-behavior-y: contain;
+}
+@media (display-mode: standalone) {
+  body {
+    /* standalone: hide selection bounce, app-like */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  /* allow text selection inside inputs/tables */
+  input, textarea, [contenteditable], table {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+}

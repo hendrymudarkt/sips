@@ -966,7 +966,7 @@ export default function Open() {
             { key: 'filter', label: showFilters ? t('hideFilters') : t('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
             { key: 'refresh', label: loading ? t('loading') : t('refresh'), icon: 'refresh', onClick: () => fetchData(appliedFilters ?? getScopedFilters(filters)), disabled: loading, loading, variant: 'outline' },
             { key: 'export', label: t('export'), icon: 'export', onClick: handleExport, variant: 'outline' },
-            { key: 'open', label: submitting ? 'Opening...' : `Open (${selectedRows.length})`, icon: 'eye-view', onClick: handleOpen, disabled: selectedRows.length === 0 || submitting, loading: submitting, variant: 'primary', tour: 'open-button' },
+            { key: 'open', label: submitting ? 'Opening...' : `Open (${selectedRows.length})`, icon: 'lock-open', onClick: handleOpen, disabled: selectedRows.length === 0 || submitting, loading: submitting, variant: 'primary', tour: 'open-button' },
           ]}
         >
           <AppTour steps={tourSteps} storageKey="tour-open-lhm" onStepChange={handleTourStepChange} btnClassName="join-item flex-1 sm:flex-none" />

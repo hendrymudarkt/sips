@@ -30,16 +30,20 @@ export const Drawer = () => {
   }, []);
 
   useEffect(() => {
-    // Update dropdown states based on current pathname
     const newStates: Record<string, boolean> = {};
-    menuItems.forEach(item => {
-      if (item.children && item.children.length > 0) {
-        const hasActiveChild = item.children.some(child => pathname.startsWith(child.href));
-        newStates[item.id] = hasActiveChild;
-      }
-    });
+    const walk = (items: MenuItem[]) => {
+      items.forEach(item => {
+        if (item.children && item.children.length > 0) {
+          const hasActiveDescendant = item.children.some(child =>
+            pathname === child.href || pathname.startsWith(child.href + '/')
+          );
+          newStates[item.id] = hasActiveDescendant;
+          walk(item.children);
+        }
+      });
+    };
+    walk(menuItems);
     setDropdownStates(newStates);
-    // Reset loading state when navigation completes.
     setIsNavigating(null);
   }, [pathname, menuItems]);
 
@@ -112,33 +116,27 @@ export const Drawer = () => {
   );
 
   // Render single menu item
-  const renderMenuItem = (item: MenuItem, isChild: boolean = false) => {
+  const renderMenuItem = (item: MenuItem) => {
     if (item.children && item.children.length > 0) {
       const isOpen = dropdownStates[item.id] || false;
-      // Render dropdown menu
       return (
         <li key={item.id}>
-          <details
-            className="[&_summary::-webkit-details-marker]:hidden"
-            open={isOpen}
-            onToggle={e => {
-              // Only update state if user clicked, not when pathname changes
-              if (e.currentTarget.open !== dropdownStates[item.id]) {
-                toggleDropdown(item.id);
-              }
-            }}
+          <button
+            type="button"
+            className="flex items-center justify-between w-full cursor-pointer px-3 py-2 hover:bg-base-300 focus-visible:ring-2 focus-visible:ring-primary rounded-lg transition-colors"
+            onClick={() => toggleDropdown(item.id)}
           >
-            <summary className="flex items-center justify-between cursor-pointer hover:bg-base-300 focus-visible:ring-2 focus-visible:ring-primary rounded-lg transition-colors list-none [&::-webkit-details-marker]:hidden after:hidden">
-              <div className="flex items-center gap-3">
-                {renderIcon(item.icon)}
-                <span>{t(item.label)}</span>
-              </div>
-              <Icon name="chevron-down" className={`ml-2 h-4 w-4 opacity-60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-            </summary>
-            <ul className="menu menu-sm">
-              {item.children.map(child => renderMenuItem(child, true))}
+            <div className="flex items-center gap-3">
+              {renderIcon(item.icon)}
+              <span>{t(item.label)}</span>
+            </div>
+            <Icon name="chevron-down" className={`h-4 w-4 opacity-60 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          </button>
+          {isOpen && (
+            <ul className="mt-1">
+              {item.children.map(child => renderMenuItem(child))}
             </ul>
-          </details>
+          )}
         </li>
       );
     }
@@ -148,10 +146,10 @@ export const Drawer = () => {
       <li key={item.id}>
         <Link
           href={item.href}
-          className={isActive(item.href)}
+          className={`w-full flex items-center gap-3 px-3 py-2 ${isActive(item.href)}`}
           onClick={() => handleNavigate(item.href)}
         >
-          {renderIcon(item.icon, isChild ? 'h-4 w-4' : 'h-5 w-5')}
+          {renderIcon(item.icon, 'h-5 w-5')}
           {t(item.label)}
         </Link>
       </li>
