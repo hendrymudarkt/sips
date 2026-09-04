@@ -244,6 +244,12 @@ export default function PengangkutanPage() {
         },
       },
       {
+        name: <span title={t('colNoPolisiTooltip')}>{t('colNoPolisi')}</span>,
+        selector: r => r.no_pol ?? r.registrationno ?? '-',
+        sortable: true,
+        width: '140px',
+      },
+      {
         name: <span title={t('colFcbaTooltip')}>{t('colFcba')}</span>,
         selector: r => r.fcba || '-',
         sortable: true,

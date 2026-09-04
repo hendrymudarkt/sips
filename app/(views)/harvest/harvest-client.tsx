@@ -292,7 +292,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colOutput'),
-        selector: row => row.output,
+        selector: row => row._outputNum ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },
@@ -304,7 +304,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colMentah'),
-        selector: row => row.mentah,
+        selector: row => row._mentahNum ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },
@@ -316,7 +316,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colOver'),
-        selector: row => row.overripe,
+        selector: row => row._overNum ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },
@@ -328,7 +328,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colBusuk'),
-        selector: row => row.busuk,
+        selector: row => row._busukNum ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },
@@ -340,7 +340,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colBusuk2'),
-        selector: row => row.busuk2,
+        selector: row => row._busuk2Num ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },
@@ -352,7 +352,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colBuahKecil'),
-        selector: row => row.buahkecil,
+        selector: row => row._kecilNum ?? 0,
         sortable: true,
         width: '110px',
         style: { justifyContent: 'end' },
@@ -364,7 +364,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colParteNo'),
-        selector: row => row.parteno,
+        selector: row => row._partenoNum ?? 0,
         sortable: true,
         width: '100px',
         style: { justifyContent: 'end' },
@@ -376,7 +376,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colParteNo50'),
-        selector: row => row.parteno50plus,
+        selector: row => row._parteno50Num ?? 0,
         sortable: true,
         width: '130px',
         style: { justifyContent: 'end' },
@@ -388,7 +388,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colBrondol'),
-        selector: row => row.brondol,
+        selector: row => row._brondolNum ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },
@@ -400,7 +400,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colAlBrondol'),
-        selector: row => row.alasbrondol,
+        selector: row => toNumber(row.alasbrondol),
         sortable: true,
         width: '110px',
         style: { justifyContent: 'end' },
@@ -412,7 +412,7 @@ export default function HarvestPage() {
       },
       {
         name: tH('colTPanjang'),
-        selector: row => row.tangkaipanjang,
+        selector: row => row._panjangNum ?? 0,
         sortable: true,
         width: '100px',
         style: { justifyContent: 'end' },
@@ -424,7 +424,7 @@ export default function HarvestPage() {
       },
       {
         name: <span>{tH('colTinggal')}</span>,
-        selector: r => r.tinggal || '-',
+        selector: r => r._tinggalNum ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },
@@ -436,7 +436,7 @@ export default function HarvestPage() {
       },
       {
         name: <span>{tH('colOutputAngkut')}</span>,
-        selector: r => r.output_pgkn || '-',
+        selector: r => r._outputPgknNum ?? 0,
         sortable: true,
         width: '110px',
         style: { justifyContent: 'end' },
@@ -448,7 +448,7 @@ export default function HarvestPage() {
       },
       {
         name: <span>{tH('colSisa')}</span>,
-        selector: r => r.sisa_pgkn || '-',
+        selector: r => r._sisaPgknNum ?? 0,
         sortable: true,
         width: '90px',
         style: { justifyContent: 'end' },

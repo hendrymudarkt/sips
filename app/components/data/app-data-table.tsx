@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import type { TableColumn, TableProps } from 'react-data-table-component';
 import { SkeletonTable } from '../ui/skeletons';
 import { EmptyState } from '../feedback/empty-state';
@@ -62,6 +62,8 @@ interface AppDataTableProps<T> extends Partial<TableProps<T>> {
   resizable?: boolean;
   /** Render the sort arrow before the column title instead of after it */
   sortIconFirst?: boolean;
+  /** Multi-column sort: Ctrl/Cmd+click on desktop, tap another header on touch */
+  sortMulti?: boolean;
 }
 
 export function AppDataTable<T>({
@@ -74,6 +76,8 @@ export function AppDataTable<T>({
   autoFitColumns = true,
   resizable = true,
   sortIconFirst = true,
+  sortMulti = true,
+  onSort,
   pagination = true,
   paginationPerPage = 100,
   paginationRowsPerPageOptions = [100, 500, 1000, 5000],
@@ -90,13 +94,28 @@ export function AppDataTable<T>({
   const wrapRef = useRef<HTMLDivElement>(null);
   const [userWidths, setUserWidths] = useState<Record<number, number>>({});
   const dragRef = useRef<{ col: number; startX: number; startW: number } | null>(null);
+  const [sortCols, setSortCols] = useState<{ name: ReactNode; dir: string }[]>([]);
+  const [sortKey, setSortKey] = useState(0);
+
+  const handleSort = useCallback(
+    (...args: Parameters<NonNullable<TableProps<T>['onSort']>>) => {
+      setSortCols((args[3] ?? []).map(s => ({ name: s.column.name, dir: String(s.sortDirection) })));
+      onSort?.(...args);
+    },
+    [onSort]
+  );
+
+  const resetSort = useCallback(() => {
+    setSortKey(k => k + 1);
+    setSortCols([]);
+  }, []);
 
   const pinWidth = useCallback(
     (col: TableColumn<T>, w: number): TableColumn<T> => ({
       ...col,
       width: `${w}px`,
       grow: 0,
-      style: { ...col.style, flexGrow: 0, minWidth: `${w}px`, maxWidth: `${w}px` },
+      style: { ...col.style, flexGrow: 0, flexShrink: 0, minWidth: `${w}px`, maxWidth: `${w}px` },
     }),
     []
   );
@@ -179,12 +198,59 @@ export function AppDataTable<T>({
     };
   }, [resizable, colIndexFromTarget]);
 
+  /* Touch multi-sort: Ctrl+tap is impossible on touch screens, so tapping
+     another sortable header while a sort is active appends instead of replacing */
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap || !sortMulti) return;
+    if (!window.matchMedia?.('(pointer: coarse)').matches) return;
+    let lastPointer = '';
+    let skipSynthetic = false;
+    const onPointerDown = (e: PointerEvent) => {
+      lastPointer = e.pointerType;
+    };
+    const onClick = (e: MouseEvent) => {
+      if (skipSynthetic || e.ctrlKey || e.metaKey) return;
+      if (lastPointer !== 'touch') return;
+      const target = e.target as HTMLElement;
+      const header = target.closest?.('.rdt_columnSortableEnabled') as HTMLElement | null;
+      if (!header || header.matches('.rdt_columnSortableActive')) return;
+      if (!wrap.querySelector('.rdt_columnSortableActive')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      skipSynthetic = true;
+      header.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true }));
+      window.setTimeout(() => {
+        skipSynthetic = false;
+      }, 0);
+    };
+    wrap.addEventListener('pointerdown', onPointerDown, true);
+    wrap.addEventListener('click', onClick, true);
+    return () => {
+      wrap.removeEventListener('pointerdown', onPointerDown, true);
+      wrap.removeEventListener('click', onClick, true);
+    };
+  }, [sortMulti]);
+
   return (
     <div
       ref={wrapRef}
       className={`rounded-lg border border-base-200 shadow-sm overflow-x-clip max-w-full bg-base-100 animate-slideUp [animation-delay:200ms]${sortIconFirst ? ' sort-icon-first' : ''}`}
       data-tour="data-table"
     >
+      {sortCols.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1 px-3 pt-2 text-xs" data-tour="sort-bar">
+          <span className="opacity-60">Sort:</span>
+          {sortCols.map((s, i) => (
+            <span key={i} className="badge badge-sm badge-outline gap-1">
+              {i + 1}. {s.name} {s.dir === 'asc' ? '↑' : '↓'}
+            </span>
+          ))}
+          <button type="button" className="btn btn-xs btn-ghost" title="Reset sort" onClick={resetSort}>
+            ✕
+          </button>
+        </div>
+      )}
       <div className="min-w-0 max-w-full">
         {loading ? (
           <div className="p-8">
@@ -192,10 +258,13 @@ export function AppDataTable<T>({
           </div>
         ) : (
           <DataTable
+            key={`${sortKey}`}
             keyField={keyField}
             columns={fittedColumns}
             data={data}
             resizable={resizable}
+            sortMulti={sortMulti}
+            onSort={handleSort}
             pagination={pagination}
             paginationPerPage={paginationPerPage}
             paginationRowsPerPageOptions={paginationRowsPerPageOptions}
@@ -216,16 +285,12 @@ export function AppDataTable<T>({
         )}
       </div>
       <style jsx global>{`
-        /* Single-scroller fix (mobile Android): RDTC's own
-           .rdt_responsiveWrapperFixed is the only horizontal scroller.
-           The outer card must never scroll, otherwise the table body
-           sticks to the inner scroller while pagination sticks to the
-           outer one and users have to drag the footer to reach the end. */
-        .rdt_table,
-        .rdt_wrapper {
-          min-width: 0;
-          max-width: 100%;
-        }
+        /* Single-scroller fix (mobile Android): the ONLY horizontal
+           scroller must be RDTC's own .rdt_responsiveWrapperFixed viewport.
+           The outer card never scrolls (overflow-x-clip above). Do NOT cap
+           .rdt_table/.rdt_wrapper — they need the lib's min-width:fit-content
+           so the table body stays wider than the viewport; capping them
+           squeezes columns and blanks out the right side. */
         .rdt_responsiveWrapperFixed,
         .rdt_responsiveWrapperScroll {
           max-width: 100%;

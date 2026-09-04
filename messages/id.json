@@ -784,6 +784,8 @@
     "colNoDokumenTooltip": "Nomor dokumen",
     "colNoPengangkutan": "No Pengangkutan",
     "colNoPengangkutanTooltip": "Nomor pengangkutan",
+    "colNoPolisi": "No Polisi",
+    "colNoPolisiTooltip": "Nomor polisi kendaraan",
     "colNoSpb": "No SPB",
     "colNoSpbTooltip": "Nomor SPB",
     "colNoTooltip": "Nomor urut baris",

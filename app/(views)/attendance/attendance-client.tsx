@@ -24,6 +24,7 @@ import type { SectionMaster } from '@/utils/services/masterDataService';
 import { fetchGangs, fetchSections } from '@/utils/services/masterDataService';
 import { exportJsonToCsv } from '@/utils/services/exportCsv';
 import { formatPerfDate } from '@/utils/helpers/perf-formatter';
+import { numOrDash } from '@/utils/helpers/tableHelper';
 import { EmployeeNameCell } from '@/app/components/ui/employee-name-cell';
 import { FilterBar, type FilterField } from '@/app/components/ui/filter-bar';
 import { QuickSearch } from '@/app/components/ui/quick-search';
@@ -1738,7 +1739,7 @@ export default function Attendance() {
       },
       {
         name: <span title={t('colHkTooltip')}>{t('colHk')}</span>,
-        selector: r => (r.mandays != null ? String(r.mandays) : '-'),
+        selector: r => numOrDash(r.mandays),
         sortable: true,
         width: '90px',
       },

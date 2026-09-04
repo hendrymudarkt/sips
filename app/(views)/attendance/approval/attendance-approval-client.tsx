@@ -14,6 +14,7 @@ import { StatusBadge } from '@/app/components/ui/status-badge';
 import { PageLayout } from '@/app/components/ui/page-layout';
 import { extractArrayData } from '@/utils/api/apiHelpers';
 import { QueryKeys } from '@/utils/queryKeys';
+import { numOrDash } from '@/utils/helpers/tableHelper';
 
 /* =========================
    T Y P E S
@@ -413,7 +414,7 @@ export default function AttendanceApproval() {
       },
       {
         name: <span title={t('colHkTooltip')}>{t('colHk')}</span>,
-        selector: r => (r.mandays != null ? String(r.mandays) : '-'),
+        selector: r => numOrDash(r.mandays),
         sortable: true,
         width: '90px',
       },

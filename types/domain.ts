@@ -335,6 +335,7 @@ export type Transport = {
   images?: string | null;
   no_ba_exca?: string | null;
   registrationno?: string | null;
+  no_pol?: string | null;
 };
 
 export type TransportFormState = {
