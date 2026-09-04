@@ -33,6 +33,19 @@ function isDesktopDevice(): boolean {
   return !isMobileUA && wide;
 }
 
+function isAndroid(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
+}
+
+function isDebug(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return new URLSearchParams(window.location.search).get('pwa-debug') === '1';
+  } catch {
+    return false;
+  }
+}
 function isIOS(): boolean {
   if (typeof window === 'undefined') return false;
   const ua = navigator.userAgent;
@@ -59,18 +72,23 @@ export default function PwaInstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [visible, setVisible] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [isAndroidDevice, setIsAndroidDevice] = useState(false);
+  const [debug, setDebug] = useState(false);
 
   const checkVisibility = useCallback(() => {
     if (isStandalone()) return setVisible(false);
+    if (!debug && isDismissed()) return setVisible(false);
     if (isDesktopDevice()) return setVisible(false);
-    if (isDismissed()) return setVisible(false);
-    // Show if we have deferred prompt OR iOS manual
-    if (deferred || isIOSDevice) setVisible(true);
+    // Show if we have deferred prompt, iOS manual, or Android manual
+    // (browsers without beforeinstallprompt: Firefox, WebView, Aloha).
+    if (deferred || isIOSDevice || isAndroidDevice) setVisible(true);
     else setVisible(false);
-  }, [deferred, isIOSDevice]);
+  }, [deferred, isIOSDevice, isAndroidDevice, debug]);
 
   useEffect(() => {
     setIsIOSDevice(isIOS());
+    setIsAndroidDevice(isAndroid());
+    setDebug(isDebug());
 
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
@@ -101,12 +119,12 @@ export default function PwaInstallPrompt() {
 
   useEffect(() => {
     checkVisibility();
-  }, [deferred, isIOSDevice, checkVisibility]);
+  }, [deferred, isIOSDevice, isAndroidDevice, debug, checkVisibility]);
 
   const handleInstall = async () => {
     try { navigator.vibrate?.(10); } catch {}
     if (!deferred) {
-      // iOS manual - just dismiss
+      // Manual path (iOS / browsers without beforeinstallprompt) - just dismiss
       setDismissed();
       setVisible(false);
       return;
@@ -135,7 +153,16 @@ export default function PwaInstallPrompt() {
 
   if (!visible) return null;
 
-  const showIOSManual = isIOSDevice && !deferred;
+  const showManual = !deferred;
+  const manualText = isIOSDevice ? (
+    <p className="text-xs opacity-70 leading-snug mt-0.5">
+      Tap <span className="font-semibold">Bagikan</span> → <span className="font-semibold">Add to Home Screen</span> untuk akses seperti aplikasi native.
+    </p>
+  ) : (
+    <p className="text-xs opacity-70 leading-snug mt-0.5">
+      Tap <span className="font-semibold">⋮</span> → <span className="font-semibold">Add to Home screen / Install app</span> untuk akses seperti aplikasi native.
+    </p>
+  );
 
   return (
     <div
@@ -152,18 +179,19 @@ export default function PwaInstallPrompt() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm leading-tight">Install SiPS Mobile</p>
-          {showIOSManual ? (
-            <p className="text-xs opacity-70 leading-snug mt-0.5">
-              Tap <span className="font-semibold">Bagikan</span> → <span className="font-semibold">Add to Home Screen</span> untuk akses seperti aplikasi native.
-            </p>
-          ) : (
+          {showManual ? manualText : (
             <p className="text-xs opacity-70 leading-snug mt-0.5">
               Install untuk akses cepat, fullscreen & offline seperti aplikasi Android.
             </p>
           )}
+          {debug && (
+            <p className="text-[10px] opacity-50 mt-1 font-mono">
+              dbg: deferred={deferred ? 'y' : 'n'} sw={'serviceWorker' in navigator ? 'y' : 'n'}
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1.5 shrink-0">
-          {!showIOSManual && (
+          {!showManual && (
             <button
               onClick={handleInstall}
               className="btn btn-primary btn-sm rounded-full px-5"
@@ -177,7 +205,7 @@ export default function PwaInstallPrompt() {
             className="btn btn-ghost btn-xs rounded-full opacity-60"
             aria-label="Tutup prompt install"
           >
-            {showIOSManual ? 'Tutup' : 'Nanti'}
+            {showManual ? 'Tutup' : 'Nanti'}
           </button>
         </div>
       </div>

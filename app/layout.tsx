@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
     manifest: '/manifest.json',
     icons: {
       icon: '/logo.svg',
-      apple: '/logo.svg',
+      apple: '/apple-touch-icon.png',
     },
     appleWebApp: {
       capable: true,
@@ -76,7 +76,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#000000',
+  themeColor: '#166534',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
