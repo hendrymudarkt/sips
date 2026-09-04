@@ -182,10 +182,10 @@ export function AppDataTable<T>({
   return (
     <div
       ref={wrapRef}
-      className={`rounded-lg border border-base-200 shadow-sm overflow-x-auto bg-base-100 animate-slideUp [animation-delay:200ms]${sortIconFirst ? ' sort-icon-first' : ''}`}
+      className={`rounded-lg border border-base-200 shadow-sm overflow-x-clip max-w-full bg-base-100 animate-slideUp [animation-delay:200ms]${sortIconFirst ? ' sort-icon-first' : ''}`}
       data-tour="data-table"
     >
-      <div className="min-w-[900px] md:min-w-0">
+      <div className="min-w-0 max-w-full">
         {loading ? (
           <div className="p-8">
             <SkeletonTable rows={10} />
@@ -216,6 +216,20 @@ export function AppDataTable<T>({
         )}
       </div>
       <style jsx global>{`
+        /* Single-scroller fix (mobile Android): RDTC's own
+           .rdt_responsiveWrapperFixed is the only horizontal scroller.
+           The outer card must never scroll, otherwise the table body
+           sticks to the inner scroller while pagination sticks to the
+           outer one and users have to drag the footer to reach the end. */
+        .rdt_table,
+        .rdt_wrapper {
+          min-width: 0;
+          max-width: 100%;
+        }
+        .rdt_responsiveWrapperFixed,
+        .rdt_responsiveWrapperScroll {
+          max-width: 100%;
+        }
         .rdt_TableHead .rdt_columnText {
           white-space: normal;
           overflow-wrap: break-word;
