@@ -23,14 +23,14 @@ export interface ToolbarProps {
 
 export function Toolbar({ title, titleTooltip, actions, tour, children }: ToolbarProps) {
   return (
-    <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-2 items-start animate-slideUp">
+    <div className="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between animate-slideUp">
       <h1
         className="text-2xl sm:text-3xl font-bold min-w-0 truncate"
         title={titleTooltip}
       >
         {title}
       </h1>
-      <div className="flex flex-row justify-start sm:justify-end flex-wrap w-full sm:w-auto join" data-tour={tour ?? 'action-buttons'}>
+      <div className="flex flex-row flex-wrap w-full lg:w-auto justify-start lg:justify-end join" data-tour={tour ?? 'action-buttons'}>
         {children}
         {actions.map(action => {
           const variantClass = action.variant === 'primary'
@@ -41,7 +41,7 @@ export function Toolbar({ title, titleTooltip, actions, tour, children }: Toolba
           return (
             <button
               key={action.key}
-              className={`btn flex-1 sm:flex-none ${variantClass} btn-sm join-item${action.loading ? ' btn-disabled' : ''}${action.disabled ? ' btn-disabled' : ''}`}
+              className={`btn flex-1 lg:flex-none min-w-0 whitespace-nowrap ${variantClass} btn-sm join-item${action.loading ? ' btn-disabled' : ''}${action.disabled ? ' btn-disabled' : ''}`}
               onClick={action.onClick}
               disabled={action.disabled || action.loading}
               data-tour={action.tour}
