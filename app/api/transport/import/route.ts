@@ -3,7 +3,6 @@ import { BACKEND_URL, getTokenFromCookie } from '@/utils/api/upstreamProxy';
 import { parseJsonSafe, unauthorizedResponse } from '@/lib/api/apiProxy';
 import { validateSecurity } from '@/lib/auth/security';
 import { CookieName } from '@/lib/constants';
-import { harvestImportSchema, validateInput } from '@/lib/utils/inputSanitizer';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,10 +12,10 @@ const MAX_RECORDS = 5000;
 const CONCURRENCY = 10;
 
 const SKIP_FIELDS = new Set([
-  'id', 'images', 'no_ba_exca', 'local_image_path',
-  '_rowKey', '_searchContent', '_outputNum', '_mentahNum', '_overNum',
-  '_busukNum', '_busuk2Num', '_kecilNum', '_partenoNum', '_parteno50Num',
-  '_brondolNum', '_panjangNum',
+  'id',
+  '_rowKey', '_searchContent', '_index', '_displayDate', '_typeLabel',
+  '_totaljanjangNum', '_outputNum', '_janjangnormalNum', '_brondolanNum',
+  '_mentahNum', '_abnormalNum',
 ]);
 
 function getCookieValue(req: NextRequest, name: string) {
@@ -53,7 +52,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   if (!ALLOWED_LEVELS.has(userLevel)) {
     return NextResponse.json(
-      { success: false, message: 'Akses ditolak. Hanya KSI dan Admin yang dapat mengimpor data.' },
+      { success: false, message: 'Akses ditolak. Hanya Admin yang dapat mengimpor data.' },
       { status: 403 }
     );
   }
@@ -70,16 +69,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const validation = validateInput(body, harvestImportSchema);
-  if (!validation.success) {
-    console.error('[HARVEST_IMPORT_400]', JSON.stringify(validation.issues?.slice(0, 5) ?? validation.error));
+  const rawRecords =
+    body && typeof body === 'object' && 'data' in (body as Record<string, unknown>)
+      ? (body as { data: unknown }).data
+      : [];
+
+  if (!Array.isArray(rawRecords) || rawRecords.length === 0) {
     return NextResponse.json(
-      { success: false, message: validation.error || 'Data tidak valid', issues: validation.issues?.slice(0, 5) },
+      { success: false, message: 'Data tidak boleh kosong' },
       { status: 400 }
     );
   }
-
-  const rawRecords = validation.data!.data;
 
   if (rawRecords.length > MAX_RECORDS) {
     return NextResponse.json(
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const sanitizedRecords = rawRecords;
+  const sanitizedRecords = rawRecords as Array<Record<string, unknown>>;
 
   if (userLevel !== 'ADM' && userFcba) {
     for (const record of sanitizedRecords) {
@@ -105,14 +105,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const successes: { nodokumen: string }[] = [];
-  const failures: { nodokumen: string; error: string }[] = [];
+  const successes: { nopengangkutan: string }[] = [];
+  const failures: { nopengangkutan: string; error: string }[] = [];
 
   async function processRecord(record: Record<string, unknown>): Promise<void> {
-    const nodokumen = String(record.nodokumen || record.kode_karyawan || 'unknown');
+    const nopengangkutan = String(
+      record.nopengangkutan || record.nospb || record.nodokumen || 'unknown'
+    );
     try {
       const fd = buildFormData(record);
-      const upstream = await fetch(`${BACKEND_URL}/api/apps/panens`, {
+      const upstream = await fetch(`${BACKEND_URL}/api/apps/pengangkutans`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
         body: fd,
@@ -121,11 +123,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const { data, parseError } = await parseJsonSafe(upstream);
 
       if (upstream.ok) {
-        const resultNodokumen =
-          (data && typeof data === 'object' && 'nodokumen' in (data as Record<string, unknown>)
-            ? String((data as Record<string, unknown>).nodokumen)
-            : null) || nodokumen;
-        successes.push({ nodokumen: resultNodokumen });
+        const resultKey =
+          (data && typeof data === 'object' && 'nopengangkutan' in (data as Record<string, unknown>)
+            ? String((data as Record<string, unknown>).nopengangkutan)
+            : null) || nopengangkutan;
+        successes.push({ nopengangkutan: resultKey });
       } else {
         const rawMsg =
           parseError
@@ -135,13 +137,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
               : data && typeof data === 'object' && 'error' in (data as Record<string, unknown>)
                 ? String((data as Record<string, unknown>).error)
                 : `HTTP ${upstream.status}`;
-        failures.push({ nodokumen, error: sanitizeErrorMessage(rawMsg) });
-        console.error('[HARVEST_IMPORT_RECORD_FAIL]', { nodokumen, status: upstream.status, data });
+        failures.push({ nopengangkutan, error: sanitizeErrorMessage(rawMsg) });
+        console.error('[TRANSPORT_IMPORT_RECORD_FAIL]', { nopengangkutan, status: upstream.status, data });
       }
     } catch (err) {
       const safeMsg = err instanceof Error ? err.message : 'Kesalahan tidak diketahui';
-      failures.push({ nodokumen, error: sanitizeErrorMessage(safeMsg) });
-      console.error('[HARVEST_IMPORT_RECORD_ERROR]', { nodokumen, error: safeMsg });
+      failures.push({ nopengangkutan, error: sanitizeErrorMessage(safeMsg) });
+      console.error('[TRANSPORT_IMPORT_RECORD_ERROR]', { nopengangkutan, error: safeMsg });
     }
   }
 

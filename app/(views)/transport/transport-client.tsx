@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import type { TableColumn } from 'react-data-table-component';
 import { useTranslations } from 'next-intl';
 import { AppDataTable } from '@/app/components/data/app-data-table';
@@ -23,6 +24,11 @@ import { formatPerfNumber } from '@/utils/helpers/perf-formatter';
 import { QueryKeys } from '@/utils/queryKeys';
 import type { Transport } from '@/types/domain';
 
+const TransportJsonUploadModal = dynamic(() => import('@/app/components/features/transport-json-upload-modal'), {
+  loading: () => null,
+  ssr: false,
+});
+
 const normalizeNonNegative = (value: string) => (value.startsWith('-') ? '0' : value);
 
 const formatTotal = (value: number, localeTag = 'id-ID'): string =>
@@ -38,7 +44,7 @@ export default function PengangkutanPage() {
     filters, setFilters, setAppliedFilters,
     items, filtered, loading, isFetching,
     totalCards,
-    canModify,
+    userLevel, canModify,
     isFcbaLocked, isAfdelingLocked, isKemandoranLocked,
     homeFcba, homeSection, homeGang,
     pabrikOptions, kendaraanOptionsAsOptions, kendaraanData,
@@ -61,6 +67,9 @@ export default function PengangkutanPage() {
     handleExport,
     queryClient,
   } = useTransportData();
+
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const canUpload = userLevel === 'ADM';
 
   const tourSteps: TourStep[] = useMemo(() => [
     {
@@ -432,6 +441,13 @@ export default function PengangkutanPage() {
               onClick: handleExport,
               disabled: items.length === 0,
             },
+            ...(canUpload ? [{
+              key: 'upload-json',
+              label: 'Upload JSON',
+              icon: 'upload',
+              onClick: () => setUploadModalOpen(true),
+              variant: 'outline' as const,
+            }] : []),
             ...(canModify ? [{
               key: 'add',
               label: t('addTransport'),
@@ -972,6 +988,16 @@ export default function PengangkutanPage() {
           confirmText={t('modalDelete')}
           cancelText={t('modalCancel')}
         />
+
+        {uploadModalOpen && (
+          <TransportJsonUploadModal
+            open={uploadModalOpen}
+            onClose={() => {
+              setUploadModalOpen(false);
+              queryClient.invalidateQueries({ queryKey: QueryKeys.TRANSPORT() });
+            }}
+          />
+        )}
     </PageLayout>
   );
 }

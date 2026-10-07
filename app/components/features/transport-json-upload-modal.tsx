@@ -4,21 +4,29 @@ import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { cookieStore } from '@/utils/auth/cookieStore';
 
 interface JsonRecord {
+  nopengangkutan?: string;
+  nospb?: string;
   nodokumen?: string;
   tanggal?: string;
-  kode_karyawan?: string;
-  nama_karyawan?: string;
-  output?: string | number;
-  busuk?: string | number;
-  busuk2?: string | number;
-  parteno50plus?: string | number;
-  brondol?: string | number;
-  tph?: string;
-  fieldcode?: string;
-  afdeling?: string;
+  etd?: string;
+  eta?: string;
+  kode_karyawan_driver?: string;
+  nama_karyawan_driver?: string;
+  kode_karyawan_kerani?: string;
+  nama_karyawan_kerani?: string;
+  kode_kendaraan?: string;
+  tkbm1?: string;
+  tkbm2?: string;
+  type_pengangkutan?: string | number;
+  pabrik_tujuan?: string;
   fcba?: string;
-  noancak?: string;
-  status_harvesting?: string;
+  afdeling?: string;
+  fieldcode?: string;
+  tph?: string;
+  totaljanjang?: string | number;
+  output?: string | number;
+  janjangnormal?: string | number;
+  status_pengangkutan?: string;
   [key: string]: unknown;
 }
 
@@ -34,7 +42,7 @@ interface Progress {
 }
 
 interface ImportResultItem {
-  nodokumen: string;
+  nopengangkutan: string;
   success: boolean;
   error?: string;
 }
@@ -46,7 +54,7 @@ interface Props {
 
 type Phase = 'idle' | 'preview' | 'importing' | 'done';
 
-export default function HarvestJsonUploadModal({ open, onClose }: Props) {
+export default function TransportJsonUploadModal({ open, onClose }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [phase, setPhase] = useState<Phase>('idle');
@@ -133,13 +141,13 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
         total,
         currentBatch,
         totalBatches,
-        currentRecord: String(batch[0]?.nodokumen || batch[0]?.kode_karyawan || '...'),
+        currentRecord: String(batch[0]?.nopengangkutan || batch[0]?.nospb || batch[0]?.nodokumen || '...'),
         successCount: accSuccess,
         failCount: accFail,
       });
 
       try {
-        const res = await fetch('/api/harvest/import', {
+        const res = await fetch('/api/transport/import', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           credentials: 'include',
@@ -157,7 +165,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
         } else {
           for (const record of batch) {
             allFailed.push({
-              nodokumen: String(record.nodokumen || record.kode_karyawan || 'unknown'),
+              nopengangkutan: String(record.nopengangkutan || record.nospb || record.nodokumen || 'unknown'),
               success: false,
               error: json.message || 'Gagal memproses batch',
             });
@@ -167,7 +175,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
       } catch (err) {
         for (const record of batch) {
           allFailed.push({
-            nodokumen: String(record.nodokumen || record.kode_karyawan || 'unknown'),
+            nopengangkutan: String(record.nopengangkutan || record.nospb || record.nodokumen || 'unknown'),
             success: false,
             error: err instanceof Error ? err.message : 'Kesalahan jaringan',
           });
@@ -210,7 +218,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
         {/* Header */}
         <div className="sticky top-0 z-10 bg-base-100 pb-2 -mx-2 sm:-mx-6 px-2 sm:px-6 border-b border-base-300">
           <div className="flex items-start justify-between">
-            <h3 className="font-bold text-lg">Upload JSON Harvesting</h3>
+            <h3 className="font-bold text-lg">Upload JSON Pengangkutan</h3>
             <button
               type="button"
               className="btn btn-sm btn-circle btn-ghost"
@@ -228,7 +236,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
             <div className="flex flex-col items-center gap-4 py-8">
               <div className="text-base-content/60 text-center">
                 <p className="text-lg font-medium mb-2">Pilih file JSON</p>
-                <p className="text-sm">File harus berformat .json dengan data harvesting</p>
+                <p className="text-sm">File harus berformat .json dengan data pengangkutan</p>
               </div>
               <input
                 ref={fileInputRef}
@@ -308,19 +316,16 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
                     <thead>
                       <tr>
                         <th>#</th>
+                        <th>No Pengangkutan</th>
+                        <th>No SPB</th>
                         <th>No Dokumen</th>
                         <th>Tanggal</th>
-                        <th>Kode Karyawan</th>
-                        <th>Nama Karyawan</th>
-                        <th>Output</th>
-                        <th>Busuk</th>
-                        <th>Busuk2</th>
-                        <th>Parteno50+</th>
-                        <th>Brondol</th>
+                        <th>Driver</th>
+                        <th>Kerani</th>
+                        <th>Kendaraan</th>
                         <th>TPH</th>
-                        <th>Fieldcode</th>
-                        <th>Afdeling</th>
-                        <th>FCBA</th>
+                        <th>Total</th>
+                        <th>Output</th>
                         <th>Status</th>
                       </tr>
                     </thead>
@@ -328,20 +333,17 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
                       {records.slice(0, 50).map((r, i) => (
                         <tr key={i}>
                           <td>{i + 1}</td>
+                          <td className="font-mono text-xs">{r.nopengangkutan || '-'}</td>
+                          <td className="font-mono text-xs">{r.nospb || '-'}</td>
                           <td className="font-mono text-xs">{r.nodokumen || '-'}</td>
                           <td>{r.tanggal || '-'}</td>
-                          <td>{r.kode_karyawan || '-'}</td>
-                          <td>{r.nama_karyawan || '-'}</td>
-                          <td className="text-right">{String(r.output ?? '-')}</td>
-                          <td className="text-right">{String(r.busuk ?? '-')}</td>
-                          <td className="text-right">{String(r.busuk2 ?? '-')}</td>
-                          <td className="text-right">{String(r.parteno50plus ?? '-')}</td>
-                          <td className="text-right">{String(r.brondol ?? '-')}</td>
+                          <td>{String(r.nama_karyawan_driver ?? r.kode_karyawan_driver ?? '-')}</td>
+                          <td>{String(r.nama_karyawan_kerani ?? r.kode_karyawan_kerani ?? '-')}</td>
+                          <td>{String(r.kode_kendaraan ?? '-')}</td>
                           <td>{r.tph || '-'}</td>
-                          <td>{r.fieldcode || '-'}</td>
-                          <td>{r.afdeling || '-'}</td>
-                          <td>{r.fcba || '-'}</td>
-                          <td>{r.status_harvesting || '-'}</td>
+                          <td className="text-right">{String(r.totaljanjang ?? '-')}</td>
+                          <td className="text-right">{String(r.output ?? '-')}</td>
+                          <td>{r.status_pengangkutan || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -424,7 +426,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
                   <div className="collapse-content">
                     <div className="max-h-40 overflow-y-auto">
                       {result.success.slice(0, 100).map((item, i) => (
-                        <p key={i} className="text-xs font-mono py-0.5">{item.nodokumen}</p>
+                        <p key={i} className="text-xs font-mono py-0.5">{item.nopengangkutan}</p>
                       ))}
                       {result.success.length > 100 && (
                         <p className="text-xs text-base-content/50 mt-1">
@@ -446,7 +448,7 @@ export default function HarvestJsonUploadModal({ open, onClose }: Props) {
                     <div className="max-h-60 overflow-y-auto space-y-1">
                       {result.failed.slice(0, 100).map((item, i) => (
                         <div key={i} className="text-xs bg-base-100 rounded p-2">
-                          <span className="font-mono font-medium">{item.nodokumen}</span>
+                          <span className="font-mono font-medium">{item.nopengangkutan}</span>
                           <br />
                           <span className="text-error">{item.error}</span>
                         </div>

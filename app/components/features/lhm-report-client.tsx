@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 import './lhm-report-print.css';
+import toast from 'react-hot-toast';
 import { useLocale } from '@/hooks/useLocale';
 import { formatPerfNumber } from '@/utils/helpers/perf-formatter';
 import { Icon } from '@/app/components/ui/icons';
@@ -100,6 +101,7 @@ export default function LhmReport() {
   const [data, setData] = useState<LhmData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   type SignatureData = {
     mandorPanen: string;
@@ -226,6 +228,38 @@ export default function LhmReport() {
       }
     );
   }, [lhaData]);
+
+  const handleExportXlsx = async () => {
+    if (data.length === 0) {
+      toast.error('Tidak ada data untuk diekspor');
+      return;
+    }
+    setExporting(true);
+    try {
+      const { exportLhmReportToXlsx } = await import('@/utils/services/lhmReportXlsx');
+      await exportLhmReportToXlsx({
+        data,
+        lhaData,
+        mainTotals,
+        lhaTotals,
+        meta: {
+          fcba,
+          afdeling,
+          tanggal,
+          kemandoran,
+          mandorPanen: signatures.mandorPanen,
+          keraniPanen: signatures.keraniPanen,
+          keraniTransport: signatures.keraniTransport,
+          mandor1: signatures.mandor1,
+          asistenAfdeling: signatures.asistenAfdeling,
+        },
+      });
+    } catch {
+      toast.error('Gagal mengekspor Excel.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -363,15 +397,36 @@ export default function LhmReport() {
 
   return (
     <div>
-      {/* Tombol Print, hanya tampil di layar */}
+      {/* Tombol Print & Export, hanya tampil di layar */}
       <div
         style={{
           marginBottom: 16,
           display: 'flex',
           justifyContent: 'flex-end',
+          gap: 8,
         }}
         className="no-print"
       >
+        <div className="tooltip tooltip-left">
+          <div className="tooltip-content">
+            <div className="animate-bounce text-orange-400 -rotate-9 text-xl font-black">
+              Export Now!
+            </div>
+          </div>
+          <button
+            onClick={handleExportXlsx}
+            disabled={loading || exporting || data.length === 0}
+            title=""
+            aria-label="Export Excel"
+            className="btn bg-[#0EA5E9] text-white border-[#0284c7]"
+          >
+            {exporting ? (
+              <span className="loading loading-spinner loading-xs" />
+            ) : (
+              <Icon name="export" className="w-4 h-4" />
+            )}
+          </button>
+        </div>
         <div className="tooltip tooltip-left">
           <div className="tooltip-content">
             <div className="animate-bounce text-orange-400 -rotate-9 text-xl font-black">
