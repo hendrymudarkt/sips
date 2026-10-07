@@ -33,7 +33,6 @@ app/                          # Next.js App Router pages and API routes
 
 hooks/                        # Custom React hooks for data fetching & state
   useDashboardData.ts         # Dashboard aggregation
-  useAttendanceData.ts        # Attendance data management
   useTransportData.ts         # Transport CRUD operations & form state
   useHarvestData.ts           # Harvest CRUD operations
   useUsersData.ts             # User management
@@ -48,15 +47,13 @@ utils/                        # Pure utility functions
   auth/                       # Auth utilities (authHelper, cookieStore, backendConfig)
   helpers/                    # Formatters (perf-formatter, filterHelper, imageHelper, etc.)
   services/                   # Service layer (API client wrappers)
-    attendanceService.ts      # Attendance API calls
     attendanceUploadService.ts
     transportService.ts       # Transport API calls
     harvestService.ts         # Harvest API calls
-    userService.ts            # User management API
-    dashboardService.ts       # Dashboard API calls
     businessUnitService.ts    # FCBA/Afdeling lookup
     masterDataService.ts      # Master data (TPH, etc.)
     exportCsv.ts              # CSV export
+    lhmReportXlsx.ts          # LHM report Excel export
     mapHelper.ts              # Map URL builder
   queryKeys.ts                # React Query key factories
 

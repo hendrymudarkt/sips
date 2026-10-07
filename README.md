@@ -51,7 +51,7 @@ e2e/
   fixtures/            E2E test fixtures
   helpers/             E2E helper utilities
   specs/               Playwright test specs
-hooks/                 React hooks (useAttendanceData, useHarvestData, useTransportData, etc.)
+hooks/                 React hooks (useHarvestData, useTransportData, etc.)
 i18n/                  next-intl routing and request setup
 lib/
   api/                 API proxy utilities
@@ -165,7 +165,7 @@ Backend API
 
 - **Query Keys** are centralized in `utils/queryKeys.ts` as a `QueryKeys` constant — never inline query keys.
 - **Domain types** live in `types/domain.ts` (Absensi, Harvest, Transport, etc.).
-- **Data hooks** (e.g., `useAttendanceData`) encapsulate TanStack Query calls and return `{ data, isLoading, error }`.
+- **Data hooks** (e.g., `useHarvestData`) encapsulate TanStack Query calls and return `{ data, isLoading, error }`.
 - **Service functions** (e.g., `attendanceService.fetchAll(filters)`) handle HTTP requests and response parsing.
 - **Shared UI components** (FilterBar, Toolbar, DataTable, AttendanceFormModal) live in `app/components/features/`.
 
