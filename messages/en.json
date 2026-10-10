@@ -1000,7 +1000,7 @@
     "colVehicleNameTooltip": "Vehicle name / description",
     "colRegistrationNo": "Plate Number",
     "colRegistrationNoTooltip": "Vehicle license plate (max 9 characters)",
-    "colNik": "NIK",
+    "colNik": "NIK KTP",
     "colNikTooltip": "Renter / driver NIK (16 digits)",
     "colDriverName": "Driver Name",
     "colDriverNameTooltip": "Vehicle driver name",

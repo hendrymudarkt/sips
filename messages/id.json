@@ -1000,7 +1000,7 @@
     "colVehicleNameTooltip": "Nama / deskripsi kendaraan",
     "colRegistrationNo": "Plat Nomor",
     "colRegistrationNoTooltip": "Nomor polisi kendaraan (maksimal 9 karakter)",
-    "colNik": "NIK",
+    "colNik": "NIK KTP",
     "colNikTooltip": "NIK penyewa / driver (16 digit)",
     "colDriverName": "Nama Driver",
     "colDriverNameTooltip": "Nama pengemudi kendaraan",
