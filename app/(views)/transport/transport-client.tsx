@@ -118,30 +118,40 @@ export default function PengangkutanPage() {
         name: <span title={t('colAksiTooltip')}>{t('colAksi')}</span>,
         width: '130px',
         style: { justifyContent: 'center' },
-        cell: r => (
-          <div className="flex flex-wrap gap-2 justify-center">
-            {canModify && (
-              <>
-                <button
-                  type="button"
-                  className="btn btn-xs btn-outline"
-                  onClick={() => openEditRecord(r)}
-                  title="Edit pengangkutan"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-xs btn-error"
-                  onClick={() => handleDeleteRecord(r)}
-                  title="Hapus pengangkutan"
-                >
-                  Hapus
-                </button>
-              </>
-            )}
-          </div>
-        ),
+        cell: r => {
+          const status = (r.status_pengangkutan || '').toLowerCase();
+          const isPlanned = status === 'planned';
+          const canEdit = canModify && isPlanned;
+          const canDelete = canModify && status !== 'approved' && status !== '';
+
+          return (
+            <div className="flex flex-wrap gap-2 justify-center">
+              {canModify && (
+                <>
+                  <button
+                    type="button"
+                    className={`btn btn-xs ${canEdit ? 'btn-outline' : 'btn-disabled'}`}
+                    onClick={() => canEdit && openEditRecord(r)}
+                    disabled={!canEdit}
+                    title={canEdit ? t('edit') : t('editDisabledTooltip')}
+                  >
+                    {t('edit')}
+                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      className="btn btn-xs btn-error"
+                      onClick={() => handleDeleteRecord(r)}
+                      title={t('deleteDisabledTooltip')}
+                    >
+                      {t('delete')}
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        },
         ignoreRowClick: true,
       },
       {
