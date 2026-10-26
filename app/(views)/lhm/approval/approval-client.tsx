@@ -845,7 +845,7 @@ export default function Approval() {
         ),
         selector: r => r._haNum ?? 0,
         sortable: true,
-        width: '90px',
+        width: '110px',
         cell: r => {
           // jika MDP ? jadi input
           if (userLevel === 'MDP' || userLevel === 'ADM') {
@@ -1175,6 +1175,3 @@ export default function Approval() {
     </PageLayout>
   );
 }
-
-
-
