@@ -23,6 +23,7 @@ export const QueryKeys = {
     ['contracts', tanggal, fcba].filter(Boolean) as unknown as string[],
   USERS: (filters?: Record<string, string>) =>
     ['sips-users', filters].filter(Boolean) as unknown as string[],
+  DEVICES: (page = 1, q = '') => ['devices', page, q],
   BUSINESS_UNITS: () => ['businessUnits'],
   MASTER_SECTIONS: (fcbaCode?: string) =>
     ['masterSections', fcbaCode].filter(Boolean) as unknown as string[],

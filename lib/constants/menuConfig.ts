@@ -119,6 +119,13 @@ export const MenuConfig: MenuItem[] = [
     requiredLevel: ['ADM', 'KSI'],
   },
   {
+    id: 'deviceManagement',
+    label: 'deviceManagement',
+    href: '/devices',
+    icon: 'M6.75 3.75h10.5A2.25 2.25 0 0 1 19.5 6v12a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 18V6a2.25 2.25 0 0 1 2.25-2.25ZM9 17.25h6',
+    requiredLevel: ['ADM'],
+  },
+  {
     id: 'cekDoket',
     label: 'cekDoket',
     href: '/cek-doket',

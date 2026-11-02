@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { CookieName, UserLevel } from '@/lib/constants';
+import { isAdminLevel } from '@/lib/auth/roleAuthorization';
 
 const PUBLIC_PATHS = new Set<string>(['/', '/login', '/register', '/forgot-password', '/reset-password', '/offline']);
 const isProduction = process.env.NODE_ENV === 'production';
@@ -12,11 +13,6 @@ function generateRandomHex(length: number): string {
     .join('')
     .substring(0, length * 2);
 }
-
-const normalizeLevel = (level: string) => {
-  const upperLevel = level.toUpperCase();
-  return upperLevel === 'ADMIN' ? UserLevel.ADMIN : upperLevel;
-};
 
 const setDefaultLocale = (response: NextResponse, request: NextRequest) => {
   if (!request.cookies.has(CookieName.NEXT_LOCALE)) {
@@ -170,13 +166,17 @@ export function middleware(request: NextRequest) {
   // Server-side role-based access control
   // SECURITY: Read ONLY the httpOnly SECURE_* cookie. The client-readable
   // user_Level cookie is tamperable and must not gate routes (CWE-807).
-  const level = normalizeLevel(request.cookies.get(CookieName.SECURE_USER_LEVEL)?.value || '');
+  const level = request.cookies.get(CookieName.SECURE_USER_LEVEL)?.value?.toUpperCase() || '';
 
   const redirectForbidden = () => {
     const redirectRes = NextResponse.redirect(new URL('/dashboard', origin));
     setDefaultLocale(redirectRes, request);
     return redirectRes;
   };
+
+  if ((pathname === '/devices' || pathname.startsWith('/devices/')) && !isAdminLevel(level)) {
+    return redirectForbidden();
+  }
 
   // Restrict LHM approval access to permitted roles.
   if (pathname.startsWith('/approval/lhm')) {
@@ -219,4 +219,3 @@ export const config = {
     '/((?!_next|api/health|gis(?:/.*)?|.*\\.(?:png|jpg|jpeg|svg|webp|avif|gif|ico|css|js|mjs|woff2?|ttf|otf)).*)',
   ],
 };
-
