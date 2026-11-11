@@ -116,7 +116,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
               options={[{ value: 'REGULAR', label: 'REGULAR' }, { value: 'ASSISTENSI', label: 'ASSISTENSI' }]}
               value={form.attendance_type}
               onChange={v => setForm(s => ({ ...s, attendance_type: v as 'REGULAR' | 'ASSISTENSI' }))}
-              disabled={disableUnlessAllowed(false)}
+              disabled={disableUnlessAllowed(true)}
             />
           </fieldset>
 
@@ -141,7 +141,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
                 <SearchSelect options={destOptions} value={destFcba ?? ''}
                   onChange={onChangeDestFcba}
                   placeholder={isLoadingBU ? 'Memuat...' : 'Pilih FCBA tujuan'}
-                  disabled={disableUnlessAllowed(false) || isLoadingBU} />
+                  disabled={disableUnlessAllowed(true) || isLoadingBU} />
               </fieldset>
               <fieldset className="fieldset col-span-12 md:col-span-4">
                 <legend className="fieldset-legend">{t('formSectionDest')}</legend>
@@ -150,7 +150,7 @@ export default function AttendanceFormModal(props: AttendanceFormModalProps) {
                   placeholder={isLoadingBU || isLoadingDestSections ? 'Memuat...'
                     : destFcba ? destSectionOptions.length > 0 ? 'Pilih Section tujuan' : 'Tidak ada Section tujuan'
                     : 'Pilih FCBA tujuan dulu'}
-                  disabled={!destFcba || disableUnlessAllowed(false) || isLoadingBU || isLoadingDestSections} />
+                  disabled={!destFcba || disableUnlessAllowed(true) || isLoadingBU || isLoadingDestSections} />
               </fieldset>
             </>
           )}

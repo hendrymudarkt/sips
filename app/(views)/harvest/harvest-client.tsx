@@ -106,6 +106,7 @@ export default function HarvestPage() {
     filtered, loading, isFetching, harvestTotals,
     isLoadingBU,
     isLoadingEmp,
+    isLoadingSections,
     isLoadingFieldcode,
     isLoadingTph,
     isLoadingEmpByGang,
@@ -774,7 +775,7 @@ export default function HarvestPage() {
                             : 'Pilih Kemandoran'
                           : 'Pilih Afdeling dulu'
                     }
-                    disabled={!selSection || isLoadingEmp || !!form.kode_karyawan}
+                    disabled={!selSection || isLoadingEmp}
                     translationNamespace="Harvest"
                   />
                 </fieldset>
@@ -790,7 +791,7 @@ export default function HarvestPage() {
                       value={selFcba}
                       onChange={onChangeFcba}
                       placeholder={isLoadingBU ? 'Memuat FCBA...' : 'Pilih FCBA'}
-                      disabled={isLoadingBU || !!form.kode_karyawan}
+                      disabled={isLoadingBU}
                       required
                       translationNamespace="Harvest"
                     />
@@ -805,22 +806,24 @@ export default function HarvestPage() {
                   )}
                 </fieldset>
 
-                {/* Afdeling: ADM/MGR/KSI bisa pilih, lainnya dikunci ke user_Afdeling cookie */}
+                {/* Afdeling: role FCBA bisa pilih, role afdeling/gang dikunci ke user_Afdeling cookie */}
                 <fieldset className="fieldset col-span-12 md:col-span-3">
                   <legend className="fieldset-legend">
-                    {userLevel === 'ADM' || userLevel === 'MGR' || userLevel === 'KSI'
-                      ? tH('formAfdeling')
-                      : tH('formAfdelingAccount')}
+                    {!isAfdelingLocked ? tH('formAfdeling') : tH('formAfdelingAccount')}
                   </legend>
-                  {userLevel === 'ADM' || userLevel === 'MGR' || userLevel === 'KSI' ? (
+                  {!isAfdelingLocked ? (
                     <SearchSelect
                       options={sectionOptions}
                       value={selSection ?? ''}
                       onChange={onChangeSection}
                       placeholder={
-                        isLoadingEmp ? 'Memuat...' : selFcba ? 'Pilih Afdeling' : 'Pilih FCBA dulu'
+                        isLoadingSections || isLoadingEmp
+                          ? 'Memuat...'
+                          : selFcba
+                            ? 'Pilih Afdeling'
+                            : 'Pilih FCBA dulu'
                       }
-                      disabled={!selFcba || isLoadingEmp || !!form.kode_karyawan}
+                      disabled={!selFcba || isLoadingSections || isLoadingEmp}
                       required
                       translationNamespace="Harvest"
                     />

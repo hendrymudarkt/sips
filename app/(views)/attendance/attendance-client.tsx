@@ -1247,6 +1247,10 @@ export default function Attendance() {
   };
 
   // Fetch destination sections dari API saat FCBA destination berubah (hanya jika ada nilai)
+  // Keep latest selection so auto-pick below never overwrites a stored destination (edit mode).
+  const destSectionRef = useRef(destSection);
+  useEffect(() => { destSectionRef.current = destSection; }, [destSection]);
+
   useEffect(() => {
     if (!destFcba) return;
 
@@ -1257,8 +1261,9 @@ export default function Attendance() {
       .then(sections => {
         setDestSections(sections);
 
-        // Auto-populate section destination
+        // Auto-populate section destination, unless the current one is still valid
         const filtered = sections.filter(s => s.fccode !== selSection);
+        if (filtered.some(s => s.fccode === destSectionRef.current)) return;
         if (filtered.length > 0) {
           const firstSection = filtered[0].fccode;
           setDestSection(firstSection);

@@ -19,6 +19,7 @@ import { cookieStore } from '@/utils/auth/cookieStore';
 import { type UserLevel } from '@/utils/helpers/filterHelper';
 import { getReadableDevice, getOrCreateDeviceIds } from '@/utils/helpers/deviceHelper';
 import { extractArrayData, extractSingleData } from '@/utils/api/apiHelpers';
+import { fetchSections, type SectionMaster } from '@/utils/services/masterDataService';
 import {
   fetchHarvestList,
   fetchHarvestDetail,
@@ -622,6 +623,35 @@ export function useHarvestData() {
 
   const buLookups = useMemo(() => getBusinessUnitLookups(businessUnits), [businessUnits]);
 
+  const fcbaCodeForSections = useMemo(
+    () => resolveBusinessUnitCode(selFcba, buLookups),
+    [selFcba, buLookups]
+  );
+
+  const { data: masterSections = [], isLoading: isLoadingSections } = useQuery({
+    queryKey: QueryKeys.MASTER_SECTIONS(),
+    queryFn: async () => {
+      try {
+        const rows = await fetchSections();
+        localStorage.setItem('master_sections', JSON.stringify(rows));
+        return rows;
+      } catch (err) {
+        console.warn('failed to fetch master sections:', err);
+        const cached = localStorage.getItem('master_sections');
+        if (cached) {
+          try {
+            return JSON.parse(cached) as SectionMaster[];
+          } catch {
+            return [];
+          }
+        }
+        return [];
+      }
+    },
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  });
+
   const { data: tphFieldcodeData = [], isLoading: isLoadingFieldcode } = useQuery({
     queryKey: QueryKeys.TPH_FIELDCODES(selFcba, selSection),
     queryFn: async () => {
@@ -721,14 +751,12 @@ export function useHarvestData() {
 
   const prefetchTphData = useCallback(
     async (fcba: string, section: string, fieldcode?: string) => {
-      const fcbaName = resolveBusinessUnitName(fcba, buLookups);
-
       if (fieldcode) {
         await queryClient.prefetchQuery({
           queryKey: QueryKeys.TPH_DETAIL(fcba, section, fieldcode),
           queryFn: async () => {
             try {
-              const res = await fetchTphDetail(fcbaName, section, fieldcode);
+              const res = await fetchTphDetail(fcba, section, fieldcode);
               if (!res.ok) return [];
               const json = await res.json();
               return extractArrayData<{
@@ -748,20 +776,14 @@ export function useHarvestData() {
           queryKey: QueryKeys.TPH_FIELDCODES(fcba, section),
           queryFn: async () => {
             try {
-              const params = new URLSearchParams({
-                fcba: fcbaName,
-                afdeling: section,
-              });
-              const res = await fetch(`/api/master/tph?${params.toString()}`, {
-                credentials: 'include',
-              });
+              const res = await fetchTphFieldcodes(fcba, section);
               if (!res.ok) return [];
               const json = await res.json();
               return extractArrayData<{
-                notph?: string;
-                fieldcode?: string;
-                ancakno?: string;
-                division?: string;
+                fccode?: string;
+                fcname?: string;
+                afdeling?: string;
+                fcba?: string;
               }>(json);
             } catch {
               return [];
@@ -771,7 +793,7 @@ export function useHarvestData() {
         });
       }
     },
-    [buLookups, queryClient]
+    [queryClient]
   );
 
   useEffect(() => {
@@ -992,6 +1014,17 @@ export function useHarvestData() {
 
   const sectionOptions = useMemo(() => {
     if (!selFcba) return [];
+
+    const sectionsFromMaster = masterSections
+      .filter(s => s.fcba === fcbaCodeForSections)
+      .map(s => ({
+        value: s.fccode,
+        label: s.fcname && s.fcname !== s.fccode ? `${s.fccode} - ${s.fcname}` : s.fccode,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    if (sectionsFromMaster.length) return sectionsFromMaster;
+
     const selCode = resolveBusinessUnitCode(selFcba, buLookups);
     const selName = resolveBusinessUnitName(selFcba, buLookups);
 
@@ -1005,7 +1038,7 @@ export function useHarvestData() {
     return Array.from(sections)
       .sort()
       .map(v => ({ value: v, label: v }));
-  }, [triplets, selFcba, buLookups]);
+  }, [triplets, selFcba, buLookups, masterSections, fcbaCodeForSections]);
 
   const kemandoranOptions = useMemo(() => {
     if (!selFcba || !selSection) return [];
@@ -1143,6 +1176,9 @@ export function useHarvestData() {
       afdeling: v,
       kemandoran: '',
       kode_karyawan: '',
+      fieldcode: '',
+      tph: '',
+      noancak: '',
     }));
   };
 
@@ -1170,13 +1206,17 @@ export function useHarvestData() {
     setSelFcba(emp.fcba || '');
     setSelSection(emp.sectionname || '');
 
-    setForm(s => ({
-      ...s,
-      kode_karyawan: fccode,
-      fcba: emp.fcba || '',
-      afdeling: emp.sectionname || '',
-      kemandoran: emp.gangcode || '',
-    }));
+    setForm(s => {
+      const afdeling = emp.sectionname || '';
+      return {
+        ...s,
+        kode_karyawan: fccode,
+        fcba: emp.fcba || '',
+        afdeling,
+        kemandoran: emp.gangcode || '',
+        ...(s.afdeling === afdeling ? {} : { fieldcode: '', tph: '', noancak: '' }),
+      };
+    });
   };
 
   useEffect(() => {
@@ -1396,6 +1436,7 @@ export function useHarvestData() {
     items, loading, isFetching,
     businessUnits, isLoadingBU,
     employees, isLoadingEmp,
+    masterSections, isLoadingSections,
     tphFieldcodeData, isLoadingFieldcode,
     tphDetailData, isLoadingTph,
     employeesByGang, isLoadingEmpByGang,
