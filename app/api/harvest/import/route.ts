@@ -58,7 +58,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const userFcba = getCookieValue(req, CookieName.SECURE_USER_FCBA);
+  const userFcbaRaw = getCookieValue(req, CookieName.SECURE_USER_FCBA);
+  // `ALL` berarti tanpa batas FCBA, jadi jangan dipakai sebagai pembanding.
+  const userFcba = /^(ALL|SEMUA)$/i.test(userFcbaRaw.trim()) ? '' : userFcbaRaw;
 
   let body: unknown;
   try {

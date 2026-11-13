@@ -15,6 +15,12 @@ import { exportJsonToCsv } from '@/utils/services/exportCsv';
 import { QueryKeys } from '@/utils/queryKeys';
 import type { SipsUser, UserFormState, UserFilters } from '@/types/domain';
 import { initialUserForm } from '@/types/domain';
+import {
+  gangMatchesPosition,
+  getPlacementError,
+  getPlacementRules,
+  normalizeEmployeeId,
+} from '@/utils/users/placementRules';
 
 function isSipsUser(v: unknown): v is SipsUser {
   if (!v || typeof v !== 'object') return false;
@@ -102,24 +108,9 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
       };
     }, [users]);
 
-  const [selFcba, setSelFcba] = useState('');
-  const [selAfdeling, setSelAfdeling] = useState('');
   const [form, setForm] = useState<UserFormState>(initialUserForm);
 
-  const onChangeFcba = (v: string) => {
-    setSelFcba(v);
-    setSelAfdeling('');
-    setForm(s => ({ ...s, fcba: v, afdeling: '', gangcode: '' }));
-  };
-  const onChangeAfdeling = (v: string) => {
-    setSelAfdeling(v);
-    setForm(s => ({ ...s, afdeling: v, gangcode: '' }));
-  };
-  const onChangeGang = (v: string) => {
-    setForm(s => ({ ...s, gangcode: v }));
-  };
-
-  const { fcbaOptions, sectionOptions, gangOptions } = useCascadingPicker(selFcba, selAfdeling);
+  const { fcbaOptions } = useCascadingPicker();
 
   const isFcbaRestricted = userLevel !== '' && userLevel !== 'ADM' && !!userFcba;
   const scopedFcbaOptions = useMemo<Option[]>(() => {
@@ -238,12 +229,15 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
 
   const applyBulkDefaults = () => {
     setBulkRows(prev =>
-      prev.map(row => ({
-        ...row,
-        fcba: bulkFcba || row.fcba,
-        afdeling: bulkAfdeling || row.afdeling,
-        gangcode: bulkGang || row.gangcode,
-      }))
+      prev.map(row => {
+        const usableGang = bulkGang && gangMatchesPosition(bulkGang, getPlacementRules(row.position));
+        return {
+          ...row,
+          fcba: bulkFcba || row.fcba,
+          afdeling: bulkAfdeling || row.afdeling,
+          gangcode: !bulkGang ? row.gangcode : usableGang ? bulkGang : '',
+        };
+      })
     );
   };
 
@@ -334,6 +328,13 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
       toast.error(t('passwordLength'));
       return;
     }
+    const placementError = getPlacementError(form);
+    if (placementError) {
+      toast.error(
+        placementError === 'gang' ? t('gangRequiredForPosition') : t('idKaryawanRequiredForPosition')
+      );
+      return;
+    }
     const fd = new FormData();
     fd.append('username', form.username);
     fd.append('fullname', form.fullname);
@@ -346,14 +347,13 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     if (form.gangcode) fd.append('gangcode', form.gangcode);
     if (form.level) fd.append('level', form.level);
     if (form.position) fd.append('position', form.position);
-    if (form.idkaryawan) fd.append('idkaryawan', form.idkaryawan);
+    const employeeId = normalizeEmployeeId(form.idkaryawan);
+    if (employeeId) fd.append('idkaryawan', employeeId);
     registerMutation.mutate(fd, {
       onSuccess: () => {
         toast.success(t('userAdded'));
         setAddOpen(false);
         setForm(initialUserForm);
-        setSelFcba('');
-        setSelAfdeling('');
       },
       onError: (err: Error) => toast.error(err.message),
     });
@@ -363,12 +363,21 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
   const removeBulkRow = (idx: number) => setBulkRows(prev => prev.filter((_, i) => i !== idx));
   const updateBulkRow = (idx: number, field: keyof UserFormState, value: string) =>
     setBulkRows(prev => prev.map((row, i) => (i === idx ? { ...row, [field]: value } : row)));
+  const updateBulkRowFields = (idx: number, patch: Partial<UserFormState>) =>
+    setBulkRows(prev => prev.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
 
   const handleBulkSubmit = async () => {
     if (bulkLoading) return;
     const validRows = bulkRows.filter(r => r.username && r.fullname && r.password);
     if (validRows.length === 0) {
       toast.error(t('noValidRows'));
+      return;
+    }
+    const invalidIndex = bulkRows.findIndex(
+      r => r.username && r.fullname && r.password && getPlacementError(r)
+    );
+    if (invalidIndex >= 0) {
+      toast.error(t('bulkPlacementInvalid', { row: invalidIndex + 1 }));
       return;
     }
     setBulkLoading(true);
@@ -387,7 +396,8 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
       if (row.gangcode) fd.append('gangcode', row.gangcode);
       if (row.level) fd.append('level', row.level);
       if (row.position) fd.append('position', row.position);
-      if (row.idkaryawan) fd.append('idkaryawan', row.idkaryawan);
+      const employeeId = normalizeEmployeeId(row.idkaryawan);
+      if (employeeId) fd.append('idkaryawan', employeeId);
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
@@ -474,10 +484,7 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     scopedFcbaOptions, fcbaOptions,
     isFcbaRestricted, userFcba, userLevel,
     isLoading, isFetching, loading, filteredUsers,
-    selFcba, setSelFcba, selAfdeling, setSelAfdeling,
     form, setForm,
-    onChangeFcba, onChangeAfdeling, onChangeGang,
-    sectionOptions, gangOptions,
     bulkSectionOptions, bulkGangOptions,
     statusMutation, registerMutation, queryClient,
     addOpen, setAddOpen,
@@ -490,7 +497,7 @@ export function useUsersData(initialQ = '', initialFilters: UserFilters = {}) {
     bulkAfdeling, setBulkAfdeling,
     bulkGang, setBulkGang,
     applyBulkDefaults,
-    addBulkRow, removeBulkRow, updateBulkRow,
+    addBulkRow, removeBulkRow, updateBulkRow, updateBulkRowFields,
     handleBulkSubmit,
     handleEdit, handleToggleStatus,
     handleAddUser, handleExport,

@@ -21,6 +21,12 @@ function getCookieValue(req: NextRequest, name: string) {
   return req.cookies.get(name)?.value || '';
 }
 
+/** Nilai `ALL` pada field penempatan berarti tanpa batas, jadi jangan kirim filter. */
+function getScopedCookieValue(req: NextRequest, name: string) {
+  const value = getCookieValue(req, name).trim();
+  return /^(ALL|SEMUA)$/i.test(value) ? '' : value;
+}
+
 function normalizeLevel(level: string) {
   const upperLevel = level.toUpperCase();
   return upperLevel === 'ADMIN' ? UserLevel.ADMIN : upperLevel;
@@ -39,9 +45,9 @@ export function applyUserDataScope(
 
   if (!level || ADMIN_LEVELS.has(level)) return searchParams;
 
-  const fcba = getCookieValue(req, CookieName.SECURE_USER_FCBA);
-  const afdeling = getCookieValue(req, CookieName.SECURE_USER_AFDELING);
-  const gang = getCookieValue(req, CookieName.SECURE_USER_GANG);
+  const fcba = getScopedCookieValue(req, CookieName.SECURE_USER_FCBA);
+  const afdeling = getScopedCookieValue(req, CookieName.SECURE_USER_AFDELING);
+  const gang = getScopedCookieValue(req, CookieName.SECURE_USER_GANG);
 
   if (FCBA_LEVELS.has(level) || AFDELING_LEVELS.has(level) || GANG_LEVELS.has(level)) {
     if (fcba) searchParams.set('fcba', fcba);

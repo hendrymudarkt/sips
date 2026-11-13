@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
-import { SearchSelect } from '../ui/search-select';
+import { SearchSelect, getFixedDropdownStyle } from '../ui/search-select';
 
 vi.mock('next-intl', () => ({
   useTranslations: () => (key: string) => key,
@@ -69,5 +69,42 @@ describe('SearchSelect', () => {
     fireEvent.click(option);
 
     expect(onChange).toHaveBeenCalledWith('opt1');
+  });
+
+  it('renders fixed dropdown in a body portal so modal overflow cannot clip it', () => {
+    const onChange = vi.fn();
+    const { container } = render(
+      <SearchSelect {...defaultProps} onChange={onChange} useFixedPositioning />
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    const listbox = screen.getByRole('listbox');
+    expect(container.contains(listbox)).toBe(false);
+    expect(listbox.parentElement?.className).toContain('fixed');
+
+    fireEvent.click(screen.getByText('Option 1'));
+    expect(onChange).toHaveBeenCalledWith('opt1');
+  });
+});
+
+describe('getFixedDropdownStyle', () => {
+  it('widens narrow fields and keeps the panel inside the viewport', () => {
+    const style = getFixedDropdownStyle(
+      { left: 900, top: 120, bottom: 150, width: 128 },
+      { width: 1024, height: 768 }
+    );
+    expect(style.width).toBe(288);
+    expect(style.left).toBe(728);
+    expect(style.top).toBe(154);
+  });
+
+  it('opens above the field when there is no room below', () => {
+    const style = getFixedDropdownStyle(
+      { left: 100, top: 620, bottom: 650, width: 320 },
+      { width: 1024, height: 768 }
+    );
+    expect(style.top).toBeUndefined();
+    expect(style.bottom).toBe(152);
   });
 });

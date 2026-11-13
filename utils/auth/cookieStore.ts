@@ -89,6 +89,9 @@ const normalizeLevel = (level: string): string => {
   return upperLevel === 'ADMIN' ? 'ADM' : upperLevel;
 };
 
+/** Field penempatan berisi `ALL` berarti tanpa batas; web memakai string kosong. */
+const normalizeScope = (value: string): string => (/^(ALL|SEMUA)$/i.test(value.trim()) ? '' : value);
+
 export const cookieStore = {
   /** Individual lookup (still faster than regex if only 1 check, but best for multiple) */
   getCookie: (name: string): string => getCookiesMap()[name] || '',
@@ -97,11 +100,11 @@ export const cookieStore = {
 
   getLevel: () => normalizeLevel(getFromMap(getCookiesMap(), LEVEL_VARIANTS)),
 
-  getFcba: () => getFromMap(getCookiesMap(), FCBA_VARIANTS),
+  getFcba: () => normalizeScope(getFromMap(getCookiesMap(), FCBA_VARIANTS)),
 
-  getSection: () => getFromMap(getCookiesMap(), SECTION_VARIANTS),
+  getSection: () => normalizeScope(getFromMap(getCookiesMap(), SECTION_VARIANTS)),
 
-  getGang: () => getFromMap(getCookiesMap(), GANG_VARIANTS),
+  getGang: () => normalizeScope(getFromMap(getCookiesMap(), GANG_VARIANTS)),
 
   getPhoto: () => getFromMap(getCookiesMap(), PHOTO_VARIANTS),
 
@@ -130,9 +133,9 @@ export const cookieStore = {
     return {
       fullName: getFromMap(map, FULL_NAME_VARIANTS),
       level: normalizeLevel(getFromMap(map, LEVEL_VARIANTS)),
-      fcba: getFromMap(map, FCBA_VARIANTS),
-      section: getFromMap(map, SECTION_VARIANTS),
-      gang: getFromMap(map, GANG_VARIANTS),
+      fcba: normalizeScope(getFromMap(map, FCBA_VARIANTS)),
+      section: normalizeScope(getFromMap(map, SECTION_VARIANTS)),
+      gang: normalizeScope(getFromMap(map, GANG_VARIANTS)),
       photo: getFromMap(map, PHOTO_VARIANTS),
     };
   },

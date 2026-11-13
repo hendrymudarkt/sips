@@ -103,6 +103,16 @@ describe('cookieStore', () => {
     expect(cookieStore.getCookie('new_cookie')).toBe('new_value');
   });
 
+  it('should treat ALL placement values as no restriction', () => {
+    document.cookie = 'user_fcba=ALL;path=/';
+    document.cookie = 'user_section=SEMUA;path=/';
+    document.cookie = 'user_gang=all;path=/';
+    expect(cookieStore.getFcba()).toBe('');
+    expect(cookieStore.getSection()).toBe('');
+    expect(cookieStore.getGang()).toBe('');
+    expect(cookieStore.getAllUserInfo()).toMatchObject({ fcba: '', section: '', gang: '' });
+  });
+
   it('should optimize cookie parsing by caching results of unchanged document.cookie', () => {
     document.cookie = 'user_level=adm;path=/';
     const firstLevel = cookieStore.getLevel();

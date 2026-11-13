@@ -8,7 +8,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { AppDataTable } from '@/app/components/data/app-data-table';
 import { SkeletonTable } from '@/app/components/ui/skeletons';
-import { SearchSelect, type Option } from '@/app/components/ui/search-select';
+import type { Option } from '@/app/components/ui/search-select';
 import { EmptyState } from '@/app/components/feedback/empty-state';
 import { Icon } from '@/app/components/ui/icons';
 import { PhotoCell } from '@/app/components/ui/photo-cell';
@@ -29,6 +29,15 @@ import { QuickSearch } from '@/app/components/ui/quick-search';
 import { FilterBar } from '@/app/components/ui/filter-bar';
 import { FormModal } from '@/app/components/ui/form-modal';
 import { PhotoUpload } from '@/app/components/ui/photo-upload';
+import {
+  BulkUserPlacementCells,
+  UserPlacementFields,
+} from '@/app/components/features/user-placement-fields';
+import {
+  getPlacementError,
+  isStaffId,
+  normalizeEmployeeId,
+} from '@/utils/users/placementRules';
 
 const LEVEL_OPTIONS: Option[] = [
   { value: 'MGR', label: 'MGR - Manager' },
@@ -62,19 +71,6 @@ const EXTRA_POSITION_OPTIONS: Option[] = [
   { value: 'ADMIN', label: 'ADMIN - Admin' },
 ];
 
-const POSITION_TO_LEVEL: Record<string, string> = {
-  EM: 'MGR',
-  KASIE: 'KSI',
-  ASISTEN: 'AST',
-  MANDOR1: 'MD1',
-  'MD.PANEN': 'MDP',
-  'KR.PANEN': 'KRP',
-  'KR.TRANS': 'KRT',
-  'KR.AFDELING': 'KRA',
-  BOD: 'BOD',
-  ADMIN: 'ADM',
-};
-
 const initialBulkRow: UserFormState = { ...initialUserForm, password: '12345678' };
 
 export default function UsersClient() {
@@ -100,11 +96,9 @@ export default function UsersClient() {
     filters, setFilters, setAppliedFilters, appliedFilters, clearFilters,
     afdelingFilterOptions, gangcodeFilterOptions,
     scopedFcbaOptions,
-    sectionOptions, gangOptions,
     bulkSectionOptions, bulkGangOptions,
     isFcbaRestricted, userFcba, userLevel,
     isLoading, isFetching, filteredUsers,
-    setSelFcba, setSelAfdeling,
     form, setForm,
     registerMutation,
     addOpen, setAddOpen,
@@ -116,9 +110,8 @@ export default function UsersClient() {
     editOpen, setEditOpen,
     editUser,
     editMutation,
-    onChangeFcba, onChangeAfdeling, onChangeGang,
     applyBulkDefaults,
-    addBulkRow, removeBulkRow, updateBulkRow,
+    addBulkRow, removeBulkRow, updateBulkRow, updateBulkRowFields,
     handleBulkSubmit,
     handleEdit, handleToggleStatus,
     handleAddUser, handleExport,
@@ -368,7 +361,7 @@ export default function UsersClient() {
             { key: 'filter', label: showFilters ? t('hideFilters') : t('showFilters'), icon: 'filter', onClick: () => setShowFilters(s => !s), variant: 'outline', tour: 'filter-button' },
             { key: 'refresh', label: isFetching ? t('loading') : t('refresh'), icon: 'refresh', onClick: () => queryClient.invalidateQueries({ queryKey: QueryKeys.USERS() }), disabled: isFetching, loading: isFetching, variant: 'outline' },
             { key: 'export', label: t('export'), icon: 'export', onClick: handleExport, variant: 'outline' },
-            { key: 'add', label: t('addUser'), icon: 'plus', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setForm({ ...initialUserForm, fcba: df }); setSelFcba(df); setSelAfdeling(''); setAddOpen(true); }, variant: 'primary', tour: 'add-button' },
+            { key: 'add', label: t('addUser'), icon: 'plus', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setForm({ ...initialUserForm, fcba: df }); setAddOpen(true); }, variant: 'primary', tour: 'add-button' },
             { key: 'bulk', label: t('bulkAdd'), icon: 'people', onClick: () => { const df = isFcbaRestricted ? userFcba : ''; setBulkRows([{ ...initialBulkRow, fcba: df }]); setBulkFcba(df); setBulkAfdeling(''); setBulkGang(''); setBulkOpen(true); }, variant: 'outline' },
           ]}
         >
@@ -539,77 +532,13 @@ export default function UsersClient() {
           </span>
         </fieldset>
 
-        {/* Penempatan */}
-        <SectionHeader title={t('assignment')} />
-        <fieldset className="fieldset col-span-12 md:col-span-4">
-          <legend className="fieldset-legend">FCBA</legend>
-          <SearchSelect
-            options={scopedFcbaOptions}
-            value={form.fcba}
-            onChange={onChangeFcba}
-            placeholder={t('select')}
-            translationNamespace="Users"
-            disabled={isFcbaRestricted}
-          />
-        </fieldset>
-        <fieldset className="fieldset col-span-12 md:col-span-4">
-          <legend className="fieldset-legend">{t('afdeling')}</legend>
-          <SearchSelect
-            options={sectionOptions}
-            value={form.afdeling}
-            onChange={onChangeAfdeling}
-            placeholder={!form.fcba ? t('selectFcbaFirst') : t('select')}
-            translationNamespace="Users"
-            disabled={!form.fcba}
-          />
-          {!form.fcba && (
-            <span className="text-[0.6rem] text-base-content/40 mt-0.5 block leading-tight">
-              {'Isi FCBA terlebih dahulu'}
-            </span>
-          )}
-        </fieldset>
-        <fieldset className="fieldset col-span-12 md:col-span-4">
-          <legend className="fieldset-legend">{t('gangcode')}</legend>
-          <SearchSelect
-            options={gangOptions}
-            value={form.gangcode}
-            onChange={onChangeGang}
-            placeholder={!form.afdeling ? t('selectAfdelingFirst') : t('select')}
-            translationNamespace="Users"
-            disabled={!form.afdeling}
-          />
-        </fieldset>
-
-        {/* Jabatan & Identitas */}
-        <SectionHeader title={t('position')} />
-        <fieldset className="fieldset col-span-12 md:col-span-6">
-          <legend className="fieldset-legend">{t('position')}</legend>
-          <select
-            className="select select-bordered w-full"
-            value={form.position}
-            onChange={e => {
-              const pos = e.target.value;
-              const lvl = POSITION_TO_LEVEL[pos] || '';
-              setForm(s => ({ ...s, position: pos, level: lvl }));
-            }}
-          >
-            <option value="">{t('select')}</option>
-            {visiblePositionOptions.map(o => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </fieldset>
-        <fieldset className="fieldset col-span-12 md:col-span-6">
-          <legend className="fieldset-legend">{t('idkaryawan')}</legend>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={form.idkaryawan}
-            onChange={e => setForm(s => ({ ...s, idkaryawan: e.target.value }))}
-          />
-        </fieldset>
+        {/* Jabatan → ID Karyawan → Penempatan */}
+        <UserPlacementFields
+          value={form}
+          onChange={patch => setForm(s => ({ ...s, ...patch }))}
+          positionOptions={visiblePositionOptions}
+          fcbaDisabled={isFcbaRestricted}
+        />
       </FormModal>
 
       {/* ═══════════════════════ BULK ADD MODAL ═══════════════════════ */}
@@ -730,7 +659,8 @@ export default function UsersClient() {
         {/* Scrollable table */}
         <div className="col-span-12">
           <p className="text-sm text-base-content/60 mb-3">{t('bulkHint')}</p>
-          <table className="table table-zebra table-xs">
+          <div className="overflow-x-auto">
+            <table className="table table-zebra table-xs">
             <thead>
               <tr>
                 <th>#</th>
@@ -739,11 +669,11 @@ export default function UsersClient() {
                 <th>Email</th>
                 <th>{t('phone')}</th>
                 <th>{t('password')} *</th>
+                <th>{t('position')}</th>
+                <th>{t('idkaryawan')}</th>
                 <th>FCBA</th>
                 <th>{t('afdeling')}</th>
                 <th>{t('gangcode')}</th>
-                <th>{t('position')}</th>
-                <th>{t('idkaryawan')}</th>
                 <th></th>
               </tr>
             </thead>
@@ -795,69 +725,12 @@ export default function UsersClient() {
                       minLength={8}
                     />
                   </td>
-                  <td>
-                    <select
-                      className="select select-bordered select-xs w-20"
-                      value={row.fcba}
-                      onChange={e => updateBulkRow(idx, 'fcba', e.target.value)}
-                      disabled={isFcbaRestricted}
-                    >
-                      <option value="">-</option>
-                      {row.fcba && !scopedFcbaOptions.some(o => o.value === row.fcba) && (
-                        <option value={row.fcba} disabled>
-                          {row.fcba}
-                        </option>
-                      )}
-                      {scopedFcbaOptions.map(o => (
-                        <option key={o.value} value={o.value}>
-                          {o.value}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input input-bordered input-xs w-20"
-                      value={row.afdeling}
-                      onChange={e => updateBulkRow(idx, 'afdeling', e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input input-bordered input-xs w-20"
-                      value={row.gangcode}
-                      onChange={e => updateBulkRow(idx, 'gangcode', e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      className="select select-bordered select-xs w-28"
-                      value={row.position}
-                      onChange={e => {
-                        const pos = e.target.value;
-                        const lvl = POSITION_TO_LEVEL[pos] || '';
-                        updateBulkRow(idx, 'position', pos);
-                        updateBulkRow(idx, 'level', lvl);
-                      }}
-                    >
-                      <option value="">-</option>
-                      {visiblePositionOptions.map(o => (
-                        <option key={o.value} value={o.value}>
-                          {o.value}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      className="input input-bordered input-xs w-28"
-                      value={row.idkaryawan}
-                      onChange={e => updateBulkRow(idx, 'idkaryawan', e.target.value)}
-                    />
-                  </td>
+                  <BulkUserPlacementCells
+                    row={row}
+                    positionOptions={visiblePositionOptions}
+                    onChange={patch => updateBulkRowFields(idx, patch)}
+                    fcbaDisabled={isFcbaRestricted}
+                  />
                   <td>
                     <button
                       className="btn btn-ghost btn-xs text-error"
@@ -871,6 +744,7 @@ export default function UsersClient() {
               ))}
             </tbody>
           </table>
+          </div>
           <button type="button" className="btn btn-ghost btn-sm mt-2" onClick={addBulkRow}>
             <Icon name="plus" className="h-4 w-4" />
             {t('addRow')}
@@ -889,10 +763,26 @@ export default function UsersClient() {
             toast.error(t('passwordLength'));
             return;
           }
+          const placementError = getPlacementError(editForm);
+          if (placementError) {
+            toast.error(
+              placementError === 'gang'
+                ? t('gangRequiredForPosition')
+                : t('idKaryawanRequiredForPosition')
+            );
+            return;
+          }
           const data: Record<string, string> = {};
           const fields = ['username', 'fullname', 'email', 'phone', 'fcba', 'afdeling', 'gangcode', 'idkaryawan', 'level', 'position', 'password'] as const;
           for (const f of fields) {
-            if (editForm[f]) data[f] = editForm[f];
+            if (f === 'idkaryawan') {
+              // STAFF dipilih eksplisit: kirim kosong supaya ID lama ikut terhapus.
+              const value = normalizeEmployeeId(editForm.idkaryawan);
+              if (value) data.idkaryawan = value;
+              else if (isStaffId(editForm.idkaryawan)) data.idkaryawan = '';
+            } else if (editForm[f]) {
+              data[f] = editForm[f];
+            }
           }
           if (editUser) editMutation.mutate({ id: editUser.id, data, photo: editPhoto });
         }}
@@ -952,69 +842,13 @@ export default function UsersClient() {
           </span>
         </fieldset>
 
-        <SectionHeader title={t('assignment')} />
-        <fieldset className="fieldset col-span-12 md:col-span-4">
-          <legend className="fieldset-legend">FCBA</legend>
-          <SearchSelect
-            options={scopedFcbaOptions}
-            value={editForm.fcba}
-            onChange={v => setEditForm(s => ({ ...s, fcba: v }))}
-            placeholder={t('select')}
-            translationNamespace="Users"
-            disabled={!isAdmin}
-          />
-          {!isAdmin && (
-            <span className="text-[0.6rem] text-base-content/40 mt-0.5 block leading-tight">
-              {t('fcbaAdminOnly')}
-            </span>
-          )}
-        </fieldset>
-        <fieldset className="fieldset col-span-12 md:col-span-4">
-          <legend className="fieldset-legend">{t('afdeling')}</legend>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={editForm.afdeling}
-            onChange={e => setEditForm(s => ({ ...s, afdeling: e.target.value }))}
-          />
-        </fieldset>
-        <fieldset className="fieldset col-span-12 md:col-span-4">
-          <legend className="fieldset-legend">{t('gangcode')}</legend>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={editForm.gangcode}
-            onChange={e => setEditForm(s => ({ ...s, gangcode: e.target.value }))}
-          />
-        </fieldset>
-
-        <SectionHeader title={t('position')} />
-        <fieldset className="fieldset col-span-12 md:col-span-6">
-          <legend className="fieldset-legend">{t('position')}</legend>
-          <select
-            className="select select-bordered w-full"
-            value={editForm.position}
-            onChange={e => {
-              const pos = e.target.value;
-              const lvl = POSITION_TO_LEVEL[pos] || '';
-              setEditForm(s => ({ ...s, position: pos, level: lvl }));
-            }}
-          >
-            <option value="">{t('select')}</option>
-            {visiblePositionOptions.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </fieldset>
-        <fieldset className="fieldset col-span-12 md:col-span-6">
-          <legend className="fieldset-legend">{t('idkaryawan')}</legend>
-          <input
-            type="text"
-            className="input input-bordered w-full"
-            value={editForm.idkaryawan}
-            onChange={e => setEditForm(s => ({ ...s, idkaryawan: e.target.value }))}
-          />
-        </fieldset>
+        <UserPlacementFields
+          value={editForm}
+          onChange={patch => setEditForm(s => ({ ...s, ...patch }))}
+          positionOptions={visiblePositionOptions}
+          fcbaDisabled={!isAdmin}
+          fcbaHint={!isAdmin ? t('fcbaAdminOnly') : undefined}
+        />
 
         <SectionHeader title={t('photo')} />
         <fieldset className="fieldset col-span-12 flex justify-center">

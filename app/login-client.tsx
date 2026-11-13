@@ -101,7 +101,7 @@ export default function Home() {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken || '',
         },
-        body: JSON.stringify({ username: username.toLowerCase(), password }),
+        body: JSON.stringify({ username: username.trim(), password }),
       });
 
       const data = await response.json();

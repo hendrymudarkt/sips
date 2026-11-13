@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { Icon } from '@/app/components/ui/icons';
 
@@ -19,6 +20,23 @@ interface SearchSelectProps {
   translationNamespace?: string;
   /** Optional: style for fixed positioning (often used in dashboards or layouts where overflow is hidden) */
   useFixedPositioning?: boolean;
+}
+
+/**
+ * Posisi dropdown fixed: lebar minimum 18rem agar nama panjang terbaca, digeser
+ * agar tidak keluar layar, dan dibuka ke atas bila ruang bawah tidak cukup.
+ */
+export function getFixedDropdownStyle(
+  rect: { left: number; top: number; bottom: number; width: number },
+  viewport: { width: number; height: number }
+): React.CSSProperties {
+  const width = Math.min(Math.max(rect.width, 288), Math.max(viewport.width - 16, 0));
+  const left = Math.max(8, Math.min(rect.left, viewport.width - width - 8));
+  const spaceBelow = viewport.height - rect.bottom - 8;
+  if (spaceBelow < 300 && rect.top > spaceBelow) {
+    return { width, left, bottom: viewport.height - rect.top + 4 };
+  }
+  return { width, left, top: rect.bottom + 4 };
 }
 
 /**
@@ -44,6 +62,8 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
   const [q, setQ] = useState('');
   const boxRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLUListElement | null>(null);
+  // Dropdown fixed dirender lewat portal, jadi klik di dalamnya bukan "di luar".
+  const portalRef = useRef<HTMLDivElement | null>(null);
 
   // ⚡ Bolt Optimization: Pre-calculate lookup map and search content
   const { optionsMap, enrichedOptions } = useMemo(() => {
@@ -69,7 +89,12 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
     const onDoc = (e: MouseEvent) => {
       if (!boxRef.current) return;
       const target = e.target as Node | null;
-      if (target && !boxRef.current.contains(target)) setOpen(false);
+      if (
+        target &&
+        !boxRef.current.contains(target) &&
+        !portalRef.current?.contains(target)
+      )
+        setOpen(false);
     };
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
@@ -99,15 +124,37 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
   // ⚡ Bolt Optimization: O(1) lookup via Map
   const currentLabel = optionsMap.get(value) || value || '';
 
-  const dropdownStyle = useMemo(() => {
-    if (!open || !boxRef.current || !useFixedPositioning) return undefined;
-    const rect = boxRef.current.getBoundingClientRect();
-    return {
-      width: rect.width,
-      left: rect.left,
-      top: rect.bottom + 4,
+  // Dropdown fixed mengikuti posisi field saat modal/container di-scroll, supaya
+  // tidak tertinggal di tempat lama dan tidak terpotong overflow container.
+  const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>();
+
+  useEffect(() => {
+    if (!open || !useFixedPositioning) {
+      setDropdownStyle(undefined);
+      return;
+    }
+    const update = () => {
+      if (!boxRef.current) return;
+      setDropdownStyle(
+        getFixedDropdownStyle(boxRef.current.getBoundingClientRect(), {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        })
+      );
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
     };
   }, [open, useFixedPositioning]);
+
+  // Modal DaisyUI memakai properti translate/scale sehingga jadi containing block
+  // untuk elemen fixed; dropdown harus dipindah ke body agar tidak terpotong.
+  const renderDropdown = (node: React.ReactNode) =>
+    useFixedPositioning && typeof document !== 'undefined' ? createPortal(node, document.body) : node;
 
   return (
     <div className="relative min-w-0" ref={boxRef}>
@@ -136,13 +183,15 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
         </span>
       )}
 
-      {open && !disabled && (
-        <div
-          className={`${
-            useFixedPositioning ? 'fixed' : 'absolute'
-          } z-[1000] mt-1 w-full rounded-xl border border-base-300 bg-base-100 shadow-xl animate-fadeIn`}
-          style={dropdownStyle}
-        >
+      {open && !disabled && (!useFixedPositioning || dropdownStyle) &&
+        renderDropdown(
+          <div
+            ref={portalRef}
+            className={`${
+              useFixedPositioning ? 'fixed' : 'absolute'
+            } z-[1000] mt-1 w-full rounded-xl border border-base-300 bg-base-100 shadow-xl animate-fadeIn`}
+            style={dropdownStyle}
+          >
           <div className="p-2 border-b border-base-200">
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -231,8 +280,8 @@ const SearchSelectInner: React.FC<SearchSelectProps> = ({
               </li>
             ))}
           </ul>
-        </div>
-      )}
+          </div>
+        )}
     </div>
   );
 };

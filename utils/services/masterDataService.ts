@@ -15,9 +15,24 @@ export type GangMaster = {
   [key: string]: unknown;
 };
 
+export type EmployeeMaster = {
+  fccode: string;
+  fcname?: string;
+  fcba?: string;
+  sectionname?: string;
+  gangcode?: string;
+  [key: string]: unknown;
+};
+
 export type FetchSectionsParams = {
   fccode?: string;
   fcba?: string;
+};
+
+export type FetchEmployeesParams = {
+  fcba?: string;
+  sectionname?: string;
+  gangcode?: string;
 };
 
 export type FetchGangsParams = {
@@ -55,5 +70,9 @@ export function fetchSections(params: FetchSectionsParams = {}): Promise<Section
 
 export function fetchGangs(params: FetchGangsParams = {}): Promise<GangMaster[]> {
   return fetchMasterData<GangMaster>('/api/master/gangs', params);
+}
+
+export function fetchEmployees(params: FetchEmployeesParams = {}): Promise<EmployeeMaster[]> {
+  return fetchMasterData<EmployeeMaster>('/api/master/karyawans', params);
 }
 
